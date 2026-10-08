@@ -15,7 +15,27 @@ import {
   Clock,
   ChevronRight,
   Sparkles,
+  GraduationCap,
+  Globe,
+  Heart,
+  ShieldCheck,
 } from "lucide-react";
+import { DEFAULT_SERVICES_SECTION_SETTINGS } from "@/features/identity";
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  BookOpen,
+  Video,
+  Award,
+  FileText,
+  GraduationCap,
+  Calendar,
+  Users,
+  Globe,
+  Sparkles,
+  Clock,
+  Heart,
+  ShieldCheck,
+};
 
 export default async function PortalIndexPage() {
   const [settings, locale, tenantId] = await Promise.all([
@@ -29,36 +49,8 @@ export default async function PortalIndexPage() {
     pageSize: 4,
   }).catch(() => ({ items: [], total: 0 }));
 
-  const quickServices = [
-    {
-      title: locale === "th" ? "หลักสูตรระดับปริญญา" : "Academic Programs",
-      desc: locale === "th" ? "ปริญญาตรี โท เอก สาขาพระพุทธศาสนา" : "Undergraduate, Master & Ph.D.",
-      href: "/portal/programs",
-      icon: BookOpen,
-      badge: locale === "th" ? "เปิดรับสมัคร" : "Admissions",
-    },
-    {
-      title: locale === "th" ? "ระบบจองห้องประชุม" : "Room Booking System",
-      desc: locale === "th" ? "จองห้องประชุมและอุปกรณ์ออนไลน์" : "Online Conference Reservations",
-      href: "/portal/meetings",
-      icon: Video,
-      badge: locale === "th" ? "บริการออนไลน์" : "Online",
-    },
-    {
-      title: locale === "th" ? "คำร้อง & ขอใบรับรอง" : "Student Requests & Forms",
-      desc: locale === "th" ? "ยื่นคำร้องขอเอกสารสำคัญทางการศึกษา" : "Official Certificates & Requests",
-      href: "/portal/certificates/request",
-      icon: Award,
-      badge: locale === "th" ? "บริการนิสิต" : "Services",
-    },
-    {
-      title: locale === "th" ? "คลังเอกสาร & แบบฟอร์ม" : "Document Downloads",
-      desc: locale === "th" ? "ดาวน์โหลดแบบฟอร์มคำร้องและระเบียบ" : "Academic Guidelines & Downloads",
-      href: "/portal/documents",
-      icon: FileText,
-      badge: locale === "th" ? "ดาวน์โหลด" : "Downloads",
-    },
-  ];
+  const servicesConfig = settings?.servicesSection ?? DEFAULT_SERVICES_SECTION_SETTINGS;
+  const activeServiceItems = (servicesConfig.items ?? []).filter((s) => s.enabled !== false);
 
   return (
     <div className="w-full">
@@ -67,61 +59,92 @@ export default async function PortalIndexPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-20">
         {/* ══════════ Section 1: Quick Services Grid ══════════ */}
-        <section className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b pb-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{locale === "th" ? "บริการสำคัญ" : "Core Services"}</span>
+        {servicesConfig.enabled && activeServiceItems.length > 0 && (
+          <section className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b pb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>
+                    {locale === "th"
+                      ? servicesConfig.eyebrowTh || "บริการสำคัญ"
+                      : servicesConfig.eyebrowEn || "Core Services"}
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+                  {locale === "th"
+                    ? servicesConfig.titleTh || "ระบบบริการการศึกษาและสารสนเทศ"
+                    : servicesConfig.titleEn || "Academic & Information Services"}
+                </h2>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
-                {locale === "th" ? "ระบบบริการการศึกษาและสารสนเทศ" : "Academic & Information Services"}
-              </h2>
-            </div>
-            <Link
-              href="/portal/programs"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
-            >
-              <span>{locale === "th" ? "ดูบริการทั้งหมด" : "View All"}</span>
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {quickServices.map((service, idx) => {
-              const Icon = service.icon;
-              return (
+              {servicesConfig.showViewAll && (
                 <Link
-                  key={idx}
-                  href={service.href}
-                  className="group relative flex flex-col justify-between p-6 rounded-2xl bg-card/60 hover:bg-card border border-border/60 hover:border-border transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"
+                  href={servicesConfig.viewAllHref || "/portal/programs"}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                        {service.badge}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
-                      {service.title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                      {service.desc}
-                    </p>
-                  </div>
-
-                  <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-primary">
-                    <span>{locale === "th" ? "เข้าใช้งาน" : "Access Service"}</span>
-                    <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
-                  </div>
+                  <span>
+                    {locale === "th"
+                      ? servicesConfig.viewAllTextTh || "ดูบริการทั้งหมด"
+                      : servicesConfig.viewAllTextEn || "View All"}
+                  </span>
+                  <ChevronRight className="h-4 w-4" />
                 </Link>
-              );
-            })}
-          </div>
-        </section>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {activeServiceItems.map((service) => {
+                const Icon = ICON_MAP[service.icon] || Sparkles;
+                const title =
+                  locale === "th"
+                    ? service.titleTh || service.titleEn
+                    : service.titleEn || service.titleTh;
+                const desc =
+                  locale === "th"
+                    ? service.descTh || service.descEn
+                    : service.descEn || service.descTh;
+                const badge =
+                  locale === "th"
+                    ? service.badgeTh || service.badgeEn
+                    : service.badgeEn || service.badgeTh;
+
+                return (
+                  <Link
+                    key={service.id}
+                    href={service.href || "#"}
+                    className="group relative flex flex-col justify-between p-6 rounded-2xl bg-card/60 hover:bg-card border border-border/60 hover:border-border transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        {badge && (
+                          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            {badge}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
+                        {title}
+                      </h3>
+                      {desc && (
+                        <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                          {desc}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                      <span>{locale === "th" ? "เข้าใช้งาน" : "Access Service"}</span>
+                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ══════════ Section 2: Latest News & Activities ══════════ */}
         {latestNews.length > 0 && (

@@ -2,27 +2,29 @@
 import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Upload, X, Loader2, Image as ImageIcon, Building, Sparkles } from "lucide-react";
+import { Upload, X, Loader2, Image as ImageIcon, Building, Sparkles, Grid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiyonCard, LiyonField, PalettePicker } from "@/shared/components/liyon";
 import { useT } from "@/shared/lib/i18n/client";
 import { cn } from "@/shared/lib/utils";
 import type { PaletteId } from "@/shared/lib/palette";
-import { DEFAULT_HERO_SETTINGS, type TenantSettings } from "@/features/identity";
+import { DEFAULT_HERO_SETTINGS, DEFAULT_SERVICES_SECTION_SETTINGS, type TenantSettings } from "@/features/identity";
 import { updateSettingsAction, uploadLogoAction } from "@/features/identity/actions";
 import { HeroSettingsTab } from "./hero-settings-tab";
+import { ServicesSettingsTab } from "./services-settings-tab";
 
 export function SettingsForm({ initial }: { initial: TenantSettings }) {
   const t = useT();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<"general" | "hero">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "hero" | "services">("general");
   const [form, setForm] = useState({
     nameTh: initial.nameTh,
     nameEn: initial.nameEn,
     logoUrl: initial.logoUrl ?? "",
     palette: initial.palette as PaletteId,
     hero: initial.hero ?? DEFAULT_HERO_SETTINGS,
+    servicesSection: initial.servicesSection ?? DEFAULT_SERVICES_SECTION_SETTINGS,
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [pending, start] = useTransition();
@@ -137,6 +139,19 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
           <Sparkles className="w-4 h-4" />
           <span>ปรับแต่ง Hero Section (หน้าแรก Portal)</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("services")}
+          className={cn(
+            "px-4 py-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 -mb-px",
+            activeTab === "services"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Grid className="w-4 h-4" />
+          <span>บริการสำคัญ & หลักสูตร (Quick Services)</span>
+        </button>
       </div>
 
       <div className="set-cards">
@@ -144,6 +159,11 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
           <HeroSettingsTab
             value={form.hero}
             onChange={(h) => setForm((prev) => ({ ...prev, hero: h }))}
+          />
+        ) : activeTab === "services" ? (
+          <ServicesSettingsTab
+            value={form.servicesSection}
+            onChange={(s) => setForm((prev) => ({ ...prev, servicesSection: s }))}
           />
         ) : (
           <>

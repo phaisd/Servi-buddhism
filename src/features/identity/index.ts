@@ -9,6 +9,14 @@ export { loginSchema, forgotPasswordSchema, resetPasswordSchema, changePasswordS
 export type { UserListItem } from "./_internal/services/user.service";
 export type { RoleItem } from "./_internal/services/role.service";
 export type { RoleAssignment, ListUsersQuery } from "./_internal/validations/users";
-export type { TenantSettings, HeroSettings, HeroNavLink, HeroSocialLink } from "./_internal/validations/settings";
-export { DEFAULT_HERO_SETTINGS } from "./_internal/validations/settings";
+export type {
+  TenantSettings,
+  HeroSettings,
+  HeroNavLink,
+  HeroSocialLink,
+  ServicesSectionSettings,
+  ServiceItem,
+} from "./_internal/validations/settings";
+export { DEFAULT_HERO_SETTINGS, DEFAULT_SERVICES_SECTION_SETTINGS } from "./_internal/validations/settings";
+
 

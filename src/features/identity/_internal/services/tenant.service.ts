@@ -6,19 +6,22 @@ import { writeAudit } from "../audit";
 import type { UpdateSettingsInput } from "../validations/settings";
 import {
   DEFAULT_HERO_SETTINGS,
+  DEFAULT_SERVICES_SECTION_SETTINGS,
   type TenantSettings,
   type HeroSettings,
   type HeroNavLink,
   type HeroSocialLink,
+  type ServicesSectionSettings,
+  type ServiceItem,
 } from "../validations/settings";
 
-export type { TenantSettings, HeroSettings, HeroNavLink, HeroSocialLink };
-export { DEFAULT_HERO_SETTINGS };
+export type { TenantSettings, HeroSettings, HeroNavLink, HeroSocialLink, ServicesSectionSettings, ServiceItem };
+export { DEFAULT_HERO_SETTINGS, DEFAULT_SERVICES_SECTION_SETTINGS };
 
 async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSettings> {
   const t = await db.tenant.findUnique({ where: { id: tenantId } });
   if (!t) throw errors.not_found();
-  const settingsObj = (t.settings as { palette?: unknown; hero?: unknown }) ?? {};
+  const settingsObj = (t.settings as { palette?: unknown; hero?: unknown; servicesSection?: unknown }) ?? {};
   const p = settingsObj.palette;
   const rawHero = (settingsObj.hero as Partial<HeroSettings>) ?? {};
   const hero: HeroSettings = {
@@ -42,6 +45,13 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     },
   };
 
+  const rawServices = (settingsObj.servicesSection as Partial<ServicesSectionSettings>) ?? {};
+  const servicesSection: ServicesSectionSettings = {
+    ...DEFAULT_SERVICES_SECTION_SETTINGS,
+    ...rawServices,
+    items: rawServices.items?.length ? rawServices.items : DEFAULT_SERVICES_SECTION_SETTINGS.items,
+  };
+
   return {
     code: t.code,
     nameTh: t.nameTh,
@@ -49,6 +59,7 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     logoUrl: t.logoUrl,
     palette: isPalette(p) ? p : DEFAULT_PALETTE,
     hero,
+    servicesSection,
   };
 }
 
@@ -56,7 +67,7 @@ export async function getTenantSettings(tenantId: string): Promise<TenantSetting
   return readTenantSettings(tenantId, prisma);
 }
 
-/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette & hero ไม่ทับทั้งก้อน */
+/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette, hero, servicesSection ไม่ทับทั้งก้อน */
 export async function updateTenantSettings(input: { tenantId: string; actorId: string } & UpdateSettingsInput): Promise<void> {
   await prisma.$transaction(async (tx) => {
     // อ่านผ่าน tx เดียวกัน ไม่ใช่ client กลาง
@@ -67,6 +78,7 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
       ...existing,
       palette: input.palette,
       ...(input.hero ? { hero: input.hero } : {}),
+      ...(input.servicesSection ? { servicesSection: input.servicesSection } : {}),
     };
     await tx.tenant.update({
       where: { id: input.tenantId },

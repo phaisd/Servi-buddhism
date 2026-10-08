@@ -129,6 +129,32 @@ export const heroSettingsSchema = z.object({
   }),
 });
 
+export const serviceItemSchema = z.object({
+  id: z.string(),
+  titleTh: z.string().default(""),
+  titleEn: z.string().default(""),
+  descTh: z.string().default(""),
+  descEn: z.string().default(""),
+  href: z.string().default("#"),
+  icon: z.string().default("BookOpen"),
+  badgeTh: z.string().default(""),
+  badgeEn: z.string().default(""),
+  enabled: z.boolean().default(true),
+});
+
+export const servicesSectionSchema = z.object({
+  enabled: z.boolean().default(true),
+  eyebrowTh: z.string().default("บริการสำคัญ"),
+  eyebrowEn: z.string().default("Core Services"),
+  titleTh: z.string().default("ระบบบริการการศึกษาและสารสนเทศ"),
+  titleEn: z.string().default("Academic & Information Services"),
+  viewAllTextTh: z.string().default("ดูบริการทั้งหมด"),
+  viewAllTextEn: z.string().default("View All"),
+  viewAllHref: z.string().default("/portal/programs"),
+  showViewAll: z.boolean().default(true),
+  items: z.array(serviceItemSchema).default([]),
+});
+
 export const updateSettingsSchema = z.object({
   nameTh: z.string().trim().min(1).max(255),
   nameEn: z.string().trim().min(1).max(255),
@@ -143,6 +169,7 @@ export const updateSettingsSchema = z.object({
     .default(""),
   palette: z.enum(PALETTE_IDS),
   hero: heroSettingsSchema.optional(),
+  servicesSection: servicesSectionSchema.optional(),
 });
 export const updateProfileSchema = z.object({ name: z.string().trim().min(1).max(255), locale: z.enum(["th", "en"]) });
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -150,6 +177,74 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type HeroSettingsInput = z.infer<typeof heroSettingsSchema>;
 export type HeroNavLinkInput = z.infer<typeof heroNavLinkSchema>;
 export type HeroSocialLinkInput = z.infer<typeof heroSocialLinkSchema>;
+
+export type ServiceItemInput = z.infer<typeof serviceItemSchema>;
+export type ServicesSectionInput = z.infer<typeof servicesSectionSchema>;
+
+export type ServiceItem = ServiceItemInput;
+export type ServicesSectionSettings = ServicesSectionInput;
+
+export const DEFAULT_SERVICES_SECTION_SETTINGS: ServicesSectionSettings = {
+  enabled: true,
+  eyebrowTh: "บริการสำคัญ",
+  eyebrowEn: "Core Services",
+  titleTh: "ระบบบริการการศึกษาและสารสนเทศ",
+  titleEn: "Academic & Information Services",
+  viewAllTextTh: "ดูบริการทั้งหมด",
+  viewAllTextEn: "View All",
+  viewAllHref: "/portal/programs",
+  showViewAll: true,
+  items: [
+    {
+      id: "programs",
+      titleTh: "หลักสูตรระดับปริญญา",
+      titleEn: "Academic Programs",
+      descTh: "ปริญญาตรี โท เอก สาขาพระพุทธศาสนา",
+      descEn: "Undergraduate, Master & Ph.D.",
+      href: "/portal/programs",
+      icon: "BookOpen",
+      badgeTh: "เปิดรับสมัคร",
+      badgeEn: "Admissions",
+      enabled: true,
+    },
+    {
+      id: "meetings",
+      titleTh: "ระบบจองห้องประชุม",
+      titleEn: "Room Booking System",
+      descTh: "จองห้องประชุมและอุปกรณ์ออนไลน์",
+      descEn: "Online Conference Reservations",
+      href: "/portal/meetings",
+      icon: "Video",
+      badgeTh: "บริการออนไลน์",
+      badgeEn: "Online",
+      enabled: true,
+    },
+    {
+      id: "certificates",
+      titleTh: "คำร้อง & ขอใบรับรอง",
+      titleEn: "Student Requests & Forms",
+      descTh: "ยื่นคำร้องขอเอกสารสำคัญทางการศึกษา",
+      descEn: "Official Certificates & Requests",
+      href: "/portal/certificates/request",
+      icon: "Award",
+      badgeTh: "บริการนิสิต",
+      badgeEn: "Services",
+      enabled: true,
+    },
+    {
+      id: "documents",
+      titleTh: "คลังเอกสาร & แบบฟอร์ม",
+      titleEn: "Document Downloads",
+      descTh: "ดาวน์โหลดแบบฟอร์มคำร้องและระเบียบ",
+      descEn: "Academic Guidelines & Downloads",
+      href: "/portal/documents",
+      icon: "FileText",
+      badgeTh: "ดาวน์โหลด",
+      badgeEn: "Downloads",
+      enabled: true,
+    },
+  ],
+};
 
 export type HeroSettings = HeroSettingsInput;
 export type HeroNavLink = HeroNavLinkInput;
@@ -232,5 +327,6 @@ export interface TenantSettings {
   logoUrl: string | null;
   palette: import("@/shared/lib/palette").PaletteId;
   hero: HeroSettings;
+  servicesSection: ServicesSectionSettings;
 }
 
