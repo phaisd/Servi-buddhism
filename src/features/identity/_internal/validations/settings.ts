@@ -150,3 +150,87 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type HeroSettingsInput = z.infer<typeof heroSettingsSchema>;
 export type HeroNavLinkInput = z.infer<typeof heroNavLinkSchema>;
 export type HeroSocialLinkInput = z.infer<typeof heroSocialLinkSchema>;
+
+export type HeroSettings = HeroSettingsInput;
+export type HeroNavLink = HeroNavLinkInput;
+export type HeroSocialLink = HeroSocialLinkInput;
+
+export const DEFAULT_HERO_SETTINGS: HeroSettings = {
+  enabled: true,
+  layout: "center-motion",
+  heightMode: "screen-90",
+  bgImageUrl: "/buddhist-hero-bg.jpg",
+  bgModeDefault: "subtle",
+  showBgToggle: true,
+  showMotionArtwork: true,
+  motionArtworkUrl: "/ember_animation_30fps.webp",
+  motionPreviewUrl: "/ember_preview.gif",
+  topTypography: {
+    enabled: true,
+    text: "EMBER",
+    linkHref: "/portal/news",
+  },
+  bottomWatermark: {
+    enabled: true,
+    text: "STUDIO",
+  },
+  manifesto: {
+    enabled: true,
+    badgeTextTh: "เกี่ยวกับเรา",
+    badgeTextEn: "ABOUT",
+    headingTh: "",
+    headingEn: "",
+    bodyTh: "เราผสานแก่นธรรมโบราณเข้ากับนวัตกรรมแห่งอนาคต สร้างสรรค์ผู้นำทางจิตปัญญา ผ่านการศึกษาและวิจัยชั้นนำระดับสากล",
+    bodyEn: "We shape striking digital identities through bold contrasts and meaningful motion. Our design process transforms the primal into the powerful.",
+  },
+  header: {
+    showLogo: true,
+    showBrandText: true,
+    customBrandText: "",
+    showLanguageSwitcher: true,
+    showThemeToggle: true,
+    showAvatarMenu: true,
+    contactPill: {
+      enabled: true,
+      labelTh: "ติดต่อเรา",
+      labelEn: "CONTACTS",
+      href: "/portal/documents",
+    },
+    navLinks: [
+      { id: "news", labelTh: "WORKS / ข่าวสาร", labelEn: "WORKS", href: "/portal/news", enabled: true },
+      { id: "programs", labelTh: "SERVICES / บริการ", labelEn: "SERVICES", href: "/portal/programs", enabled: true },
+      { id: "personnel", labelTh: "ABOUT / บุคลากร", labelEn: "ABOUT", href: "/portal/personnel", enabled: true },
+      { id: "events", labelTh: "TEAM / กิจกรรม", labelEn: "TEAM", href: "/portal/events", enabled: true },
+    ],
+  },
+  footerRail: {
+    enabled: true,
+    ctaButton: {
+      enabled: true,
+      eyebrow: "DOUBLE CLICK AND",
+      labelTh: "สำรวจบริการและผลงาน",
+      labelEn: "EXPLORE OUR WORK",
+      href: "/portal/programs",
+    },
+    socialLinks: [
+      { id: "fb", label: "FACEBOOK", href: "https://facebook.com", enabled: true },
+      { id: "ig", label: "INSTAGRAM", href: "https://instagram.com", enabled: true },
+      { id: "tg", label: "TELEGRAM", href: "https://t.me", enabled: true },
+    ],
+    locationText: {
+      enabled: true,
+      title: "",
+      address: "WANG NOI, AYUTTHAYA 13170, THAILAND",
+    },
+  },
+};
+
+export interface TenantSettings {
+  code: string;
+  nameTh: string;
+  nameEn: string;
+  logoUrl: string | null;
+  palette: import("@/shared/lib/palette").PaletteId;
+  hero: HeroSettings;
+}
+
