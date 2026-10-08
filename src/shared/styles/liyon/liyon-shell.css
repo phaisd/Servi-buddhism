@@ -856,13 +856,14 @@ section.band{margin-top:64px}
 .dlg > .box{
   position:relative;border-radius:var(--r-lg);
   background:var(--glass-strong);border:1px solid var(--glass-border);box-shadow:var(--shadow);
+  max-height:min(90vh, 900px);display:flex;flex-direction:column;
 }
-.dlg .hd{padding:22px 24px 0;padding-right:52px}
+.dlg .hd{padding:22px 24px 0;padding-right:52px;flex:none}
 .dlg .hd h2{font-size:1.1rem;font-weight:700;line-height:1.4}
 .dlg .hd p{font-size:.86rem;color:var(--text-2);margin-top:6px;line-height:1.65}
 .dlg .hd p b{color:var(--text);font-weight:600}
-.dlg .bd{padding:18px 24px}
-.dlg .ft{display:flex;justify-content:flex-end;gap:8px;padding:0 24px 22px}
+.dlg .bd{padding:18px 24px;overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;scrollbar-width:thin}
+.dlg .ft{display:flex;justify-content:flex-end;gap:8px;padding:0 24px 22px;flex:none}
 .dlg .ft .btn-sm,.dlg .ft .btn-pri,.dlg .ft .btn-danger{height:38px;padding:0 16px}
 .dlg .x{position:absolute;top:12px;right:12px;width:32px;height:32px}
 .dlg.danger .hd h2{color:var(--danger-ink)}

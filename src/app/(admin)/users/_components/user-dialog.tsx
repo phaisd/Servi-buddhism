@@ -57,9 +57,9 @@ export function UserDialog({
             <input id="user-email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required disabled={mode === "edit"} />
           </LiyonField>
           <LiyonField label={t("users.roles")} hint={isSelf ? t("users.cannotEditSelf") : t("users.rolesHint")}>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto p-3 rounded-lg border border-[var(--glass-border)] bg-[var(--panel)]/40 scrollbar-thin">
               {assignableRoles.map((role) => (
-                <label key={role.id} htmlFor={`role-${role.id}`} className="flex items-center gap-2 text-sm">
+                <label key={role.id} htmlFor={`role-${role.id}`} className="flex items-center gap-2 text-sm hover:text-[var(--text)] cursor-pointer">
                   <Checkbox id={`role-${role.id}`} checked={form.roleIds.includes(role.id)} onCheckedChange={(c) => toggleRole(role.id, c === true)} disabled={isSelf} />
                   {localizedName(role, locale)}
                 </label>

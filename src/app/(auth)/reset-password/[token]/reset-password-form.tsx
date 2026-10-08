@@ -1,21 +1,30 @@
 "use client";
+
 import { useState } from "react";
 import Link from "next/link";
 import { useT } from "@/shared/lib/i18n/client";
 import { resetPasswordAction } from "@/features/identity/actions";
 import { BrandMarkIcon, LockIcon } from "../../_components/icons";
+import { useTenantSettings } from "../../_components/tenant-settings-context";
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const t = useT();
+  const settings = useTenantSettings();
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [state, setState] = useState<"form" | "done" | "invalid">("form");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const brandName = settings?.nameTh || t("app.name");
+  const brandNameEn = settings?.nameEn;
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (pw !== pw2) { setError(t("reset.mismatch")); return; }
+    if (pw !== pw2) {
+      setError(t("reset.mismatch"));
+      return;
+    }
     setLoading(true);
     const r = await resetPasswordAction({ token, password: pw });
     setLoading(false);
@@ -26,7 +35,24 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   return (
     <div className="auth-box">
-      <div className="auth-mark"><i><BrandMarkIcon /></i><div><h1>{t("app.name")}</h1></div></div>
+      <div className="auth-mark">
+        <i>
+          {settings?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={settings.logoUrl}
+              alt={brandName}
+              className="h-full w-full object-contain p-1.5 rounded-[inherit]"
+            />
+          ) : (
+            <BrandMarkIcon />
+          )}
+        </i>
+        <div>
+          <h1>{brandName}</h1>
+          {brandNameEn && <p className="text-xs text-muted-foreground mt-0.5">{brandNameEn}</p>}
+        </div>
+      </div>
       <div className="auth-card">
         <div className="hd"><h2>{t("reset.title")}</h2><p>{t("reset.desc")}</p></div>
         {state === "done" && <div className="state ok on"><p>{t("reset.done")}</p><div className="acts"><Link className="btn-sm solid" href="/login">{t("auth.signIn")}</Link></div></div>}

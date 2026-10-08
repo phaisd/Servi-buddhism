@@ -71,14 +71,14 @@ export function RoleDialog({
             <textarea id="role-desc" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </LiyonField>
           <LiyonField label={t("roles.perms")}>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 max-h-[340px] overflow-y-auto p-3.5 rounded-lg border border-[var(--glass-border)] bg-[var(--panel)]/40 scrollbar-thin">
               {modules.map((module) => (
                 <fieldset key={module} className="flex flex-col gap-2">
-                  <legend>{t(`roles.module.${module}`)}</legend>
+                  <legend className="font-semibold text-xs text-[var(--brand-ink)] tracking-wide">{t(`roles.module.${module}`)}</legend>
                   {permissions
                     .filter((p) => p.module === module)
                     .map((p) => (
-                      <label key={p.code} htmlFor={`perm-${p.code}`} className="flex items-center gap-2 text-sm">
+                      <label key={p.code} htmlFor={`perm-${p.code}`} className="flex items-center gap-2 text-sm hover:text-[var(--text)] cursor-pointer">
                         <Checkbox
                           id={`perm-${p.code}`}
                           checked={form.permissionCodes.includes(p.code)}

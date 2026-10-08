@@ -1,17 +1,13 @@
-"use client";
-import { usePathname } from "next/navigation";
-import { BrandPanel } from "./_components/brand-panel";
+import { resolveTenantSettings } from "@/features/identity/server";
+import { AuthLayoutClient } from "./_components/auth-layout-client";
 
 /** /login = สองคอลัมน์มีแผ่นแบรนด์ (`.auth-split`) · หน้าอื่น = การ์ดเดี่ยวกลางจอ (`.auth-solo`) ตาม liyon-auth.css */
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const isLogin = usePathname() === "/login";
-  if (isLogin) {
-    return (
-      <div className="auth auth-split">
-        <BrandPanel />
-        <main className="auth-main">{children}</main>
-      </div>
-    );
-  }
-  return <div className="auth auth-solo">{children}</div>;
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const tenantSettings = await resolveTenantSettings();
+
+  return (
+    <AuthLayoutClient tenantSettings={tenantSettings}>
+      {children}
+    </AuthLayoutClient>
+  );
 }

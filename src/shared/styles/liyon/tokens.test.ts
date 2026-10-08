@@ -25,7 +25,7 @@ function referenced(css: string): Set<string> {
 }
 const union = (...sets: Set<string>[]) => new Set(sets.flatMap((s) => [...s]));
 
-const PALETTES = ["blue", "coral", "pink", "green", "purple"];
+const PALETTES = ["blue", "coral", "pink", "green", "purple", "mourning"];
 const palettes = rules(read("liyon-palettes.css"));
 const base = rules(read("liyon-base.css"));
 const compatCss = read("liyon-compat.css");

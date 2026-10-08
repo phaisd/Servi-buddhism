@@ -1,6 +1,14 @@
-import { LayoutDashboard, Users, Settings, Layers, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Layers, Newspaper, FileText, type LucideIcon } from "lucide-react";
 import { hasPermission, P } from "@/features/identity";
 import { SAMPLE_P } from "@/features/sample";
+import { NEWS_P } from "@/features/news";
+import { CERTIFICATES_P } from "@/features/certificates";
+import { PERSONNEL_P } from "@/features/personnel";
+import { CURRICULUM_P } from "@/features/curriculum";
+import { ADMINISTRATION_P } from "@/features/administration";
+import { MEETINGS_P } from "@/features/meetings";
+import { ATTENDANCE_P } from "@/features/attendance";
+import { EVENTS_P } from "@/features/events";
 
 export interface NavItem {
   /** i18n key */
@@ -16,6 +24,56 @@ export interface NavCrumb { title: string; href: string }
 
 export const sidebarGroups: NavGroup[] = [
   { label: "nav.group.overview", items: [{ title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard }] },
+  {
+    label: "news.nav",
+    items: [{ title: "news.nav", href: "/news", icon: Newspaper, permission: NEWS_P.newsRead }],
+  },
+  {
+    label: "certificates.nav",
+    items: [{ 
+      title: "certificates.nav", href: "/certificates", icon: FileText, permission: CERTIFICATES_P.requestView,
+      children: [
+        { title: "certificates.nav", href: "/certificates", permission: CERTIFICATES_P.requestView },
+        { title: "perm.certificates:type:manage", href: "/certificates/types", permission: CERTIFICATES_P.typeManage },
+      ]
+    }],
+  },
+  {
+    label: "personnel.nav",
+    items: [{ 
+      title: "personnel.nav", href: "/personnel", icon: Users, permission: PERSONNEL_P.read,
+      children: [
+        { title: "personnel.nav", href: "/personnel", permission: PERSONNEL_P.read },
+        { title: "perm.personnel:manage", href: "/personnel/departments", permission: PERSONNEL_P.manage },
+      ]
+    }],
+  },
+  {
+    label: "curriculum.nav",
+    items: [{ title: "curriculum.nav", href: "/curriculum", icon: FileText, permission: CURRICULUM_P.read }],
+  },
+  {
+    label: "administration.nav",
+    items: [{ title: "administration.title", href: "/administration", icon: FileText, permission: ADMINISTRATION_P.read }],
+  },
+  {
+    label: "meetings.nav",
+    items: [{ 
+      title: "meetings.title", href: "/meetings/rooms", icon: Users, permission: MEETINGS_P.manage,
+      children: [
+        { title: "meetings.title", href: "/meetings/rooms", permission: MEETINGS_P.manage },
+        { title: "meetings.bookings.title", href: "/meetings/bookings", permission: MEETINGS_P.manage },
+      ]
+    }],
+  },
+  {
+    label: "attendance.nav",
+    items: [{ title: "attendance.classes.title", href: "/attendance/classes", icon: FileText, permission: ATTENDANCE_P.manage }],
+  },
+  {
+    label: "events.nav",
+    items: [{ title: "events.title", href: "/events", icon: Users, permission: EVENTS_P.manage }],
+  },
   {
     label: "nav.group.sample",
     items: [{ title: "sample.nav", href: "/sample", icon: Layers, permission: SAMPLE_P.sampleRead }],

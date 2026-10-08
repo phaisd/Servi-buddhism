@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { UI_MESSAGES } from "./index";
 import { MESSAGES as core } from "./messages/core";
 import { MESSAGES as identity } from "@/features/identity/messages";
+import { MESSAGES as sample } from "@/features/sample/messages";
+import { MESSAGES as news } from "@/features/news/messages";
 import { ALL_PERMISSIONS } from "@/permissions";
 import { LOCALES } from "@/shared/lib/i18n/config";
 import type { Dictionary } from "@/shared/lib/i18n/translate";
@@ -13,6 +15,8 @@ import type { Dictionary } from "@/shared/lib/i18n/translate";
 const DICTIONARIES: { name: string; messages: Dictionary }[] = [
   { name: "core", messages: core },
   { name: "identity", messages: identity },
+  { name: "sample", messages: sample },
+  { name: "news", messages: news },
 ];
 
 describe("UI_MESSAGES", () => {

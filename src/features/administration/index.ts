@@ -1,0 +1,1 @@
+export { ADMINISTRATION_P, ADMINISTRATION_PERMISSIONS } from "./permissions";

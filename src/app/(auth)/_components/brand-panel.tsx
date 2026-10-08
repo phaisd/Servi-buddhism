@@ -1,18 +1,55 @@
 "use client";
+
 import { useT } from "@/shared/lib/i18n/client";
 import { BrandMarkIcon } from "./icons";
+import { useTenantSettings } from "./tenant-settings-context";
+import type { TenantSettings } from "@/features/identity";
 
-export function BrandPanel() {
+interface BrandPanelProps {
+  tenantSettings?: TenantSettings | null;
+}
+
+export function BrandPanel({ tenantSettings: propSettings }: BrandPanelProps) {
   const t = useT();
+  const contextSettings = useTenantSettings();
+  const settings = propSettings ?? contextSettings;
+
+  const brandName = settings?.nameTh || t("app.name");
+  const brandNameEn = settings?.nameEn;
+
   return (
     <aside className="brandside">
-      <div className="mark"><i><BrandMarkIcon /></i>{t("app.name")}</div>
-      <div className="lead">
-        <div className="eyebrow"><span>{t("auth.brand.eyebrow")}</span></div>
-        <h1>{t("auth.brand.title")}</h1>
-        <p>{t("auth.brand.subtitle")}</p>
+      <div className="mark">
+        <i>
+          {settings?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={settings.logoUrl}
+              alt={brandName}
+              className="h-full w-full object-contain p-1 rounded-[inherit]"
+            />
+          ) : (
+            <BrandMarkIcon />
+          )}
+        </i>
+        <span>{brandName}</span>
       </div>
-      <p className="foot">{t("app.tagline")}</p>
+
+      <div className="lead">
+        <div className="eyebrow">
+          <span>{brandNameEn ? brandNameEn.toUpperCase() : t("auth.brand.eyebrow")}</span>
+        </div>
+        <h1>{brandName}</h1>
+        <p>
+          {brandNameEn
+            ? `${brandNameEn} — ระบบสารสนเทศและบริการออนไลน์`
+            : t("auth.brand.subtitle")}
+        </p>
+      </div>
+
+      <p className="foot">
+        {settings?.nameTh ? `${settings.nameTh} · ${brandNameEn || ""}` : t("app.tagline")}
+      </p>
     </aside>
   );
 }
