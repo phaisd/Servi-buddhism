@@ -155,6 +155,36 @@ export const servicesSectionSchema = z.object({
   items: z.array(serviceItemSchema).default([]),
 });
 
+export const newsSectionSchema = z.object({
+  enabled: z.boolean().default(true),
+  eyebrowTh: z.string().default("ประชาสัมพันธ์"),
+  eyebrowEn: z.string().default("Announcements"),
+  titleTh: z.string().default("ข่าวสารและกิจกรรมล่าสุด"),
+  titleEn: z.string().default("Latest News & Events"),
+  showViewAll: z.boolean().default(true),
+  viewAllTextTh: z.string().default("ดูข่าวสารทั้งหมด"),
+  viewAllTextEn: z.string().default("All News"),
+  viewAllHref: z.string().default("/portal/news"),
+  pageSize: z.number().int().min(1).max(12).default(4),
+});
+
+export const facultyBannerSchema = z.object({
+  enabled: z.boolean().default(true),
+  badgeTh: z.string().default("คณาจารย์ผู้ทรงคุณวุฒิ"),
+  badgeEn: z.string().default("Distinguished Faculty"),
+  headingTh: z.string().default("รวมคณาจารย์และนักวิชาการพระพุทธศาสนาระดับโลก"),
+  headingEn: z.string().default("World-Class Buddhist Scholars & Academic Faculty"),
+  descTh: z.string().default("พบกับผู้เชี่ยวชาญด้านพระไตรปิฎกศึกษา ปรัชญา ศาสนาเปรียบเทียบ และการบริหารจัดการศึกษา ที่พร้อมถ่ายทอดองค์ความรู้แก่นิสิตทุกระดับชั้น"),
+  descEn: z.string().default("Learn from specialized professors in Tipitaka studies, Buddhist philosophy, and comparative religion."),
+  buttonLabelTh: z.string().default("ทำเนียบคณาจารย์และบุคลากร"),
+  buttonLabelEn: z.string().default("View Faculty Directory"),
+  buttonHref: z.string().default("/portal/personnel"),
+  showCircles: z.boolean().default(true),
+  circle1Text: z.string().default("MCU"),
+  circle2Text: z.string().default("ธรรม"),
+  circle3Text: z.string().default("ปัญญา"),
+});
+
 export const updateSettingsSchema = z.object({
   nameTh: z.string().trim().min(1).max(255),
   nameEn: z.string().trim().min(1).max(255),
@@ -170,6 +200,8 @@ export const updateSettingsSchema = z.object({
   palette: z.enum(PALETTE_IDS),
   hero: heroSettingsSchema.optional(),
   servicesSection: servicesSectionSchema.optional(),
+  newsSection: newsSectionSchema.optional(),
+  facultyBanner: facultyBannerSchema.optional(),
 });
 export const updateProfileSchema = z.object({ name: z.string().trim().min(1).max(255), locale: z.enum(["th", "en"]) });
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -320,6 +352,42 @@ export const DEFAULT_HERO_SETTINGS: HeroSettings = {
   },
 };
 
+export type NewsSectionSettingsInput = z.infer<typeof newsSectionSchema>;
+export type FacultyBannerSettingsInput = z.infer<typeof facultyBannerSchema>;
+
+export type NewsSectionSettings = NewsSectionSettingsInput;
+export type FacultyBannerSettings = FacultyBannerSettingsInput;
+
+export const DEFAULT_NEWS_SECTION_SETTINGS: NewsSectionSettings = {
+  enabled: true,
+  eyebrowTh: "ประชาสัมพันธ์",
+  eyebrowEn: "Announcements",
+  titleTh: "ข่าวสารและกิจกรรมล่าสุด",
+  titleEn: "Latest News & Events",
+  showViewAll: true,
+  viewAllTextTh: "ดูข่าวสารทั้งหมด",
+  viewAllTextEn: "All News",
+  viewAllHref: "/portal/news",
+  pageSize: 4,
+};
+
+export const DEFAULT_FACULTY_BANNER_SETTINGS: FacultyBannerSettings = {
+  enabled: true,
+  badgeTh: "คณาจารย์ผู้ทรงคุณวุฒิ",
+  badgeEn: "Distinguished Faculty",
+  headingTh: "รวมคณาจารย์และนักวิชาการพระพุทธศาสนาระดับโลก",
+  headingEn: "World-Class Buddhist Scholars & Academic Faculty",
+  descTh: "พบกับผู้เชี่ยวชาญด้านพระไตรปิฎกศึกษา ปรัชญา ศาสนาเปรียบเทียบ และการบริหารจัดการศึกษา ที่พร้อมถ่ายทอดองค์ความรู้แก่นิสิตทุกระดับชั้น",
+  descEn: "Learn from specialized professors in Tipitaka studies, Buddhist philosophy, and comparative religion.",
+  buttonLabelTh: "ทำเนียบคณาจารย์และบุคลากร",
+  buttonLabelEn: "View Faculty Directory",
+  buttonHref: "/portal/personnel",
+  showCircles: true,
+  circle1Text: "MCU",
+  circle2Text: "ธรรม",
+  circle3Text: "ปัญญา",
+};
+
 export interface TenantSettings {
   code: string;
   nameTh: string;
@@ -328,5 +396,8 @@ export interface TenantSettings {
   palette: import("@/shared/lib/palette").PaletteId;
   hero: HeroSettings;
   servicesSection: ServicesSectionSettings;
+  newsSection: NewsSectionSettings;
+  facultyBanner: FacultyBannerSettings;
 }
+
 

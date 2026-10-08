@@ -7,21 +7,45 @@ import type { UpdateSettingsInput } from "../validations/settings";
 import {
   DEFAULT_HERO_SETTINGS,
   DEFAULT_SERVICES_SECTION_SETTINGS,
+  DEFAULT_NEWS_SECTION_SETTINGS,
+  DEFAULT_FACULTY_BANNER_SETTINGS,
   type TenantSettings,
   type HeroSettings,
   type HeroNavLink,
   type HeroSocialLink,
   type ServicesSectionSettings,
   type ServiceItem,
+  type NewsSectionSettings,
+  type FacultyBannerSettings,
 } from "../validations/settings";
 
-export type { TenantSettings, HeroSettings, HeroNavLink, HeroSocialLink, ServicesSectionSettings, ServiceItem };
-export { DEFAULT_HERO_SETTINGS, DEFAULT_SERVICES_SECTION_SETTINGS };
+export type {
+  TenantSettings,
+  HeroSettings,
+  HeroNavLink,
+  HeroSocialLink,
+  ServicesSectionSettings,
+  ServiceItem,
+  NewsSectionSettings,
+  FacultyBannerSettings,
+};
+export {
+  DEFAULT_HERO_SETTINGS,
+  DEFAULT_SERVICES_SECTION_SETTINGS,
+  DEFAULT_NEWS_SECTION_SETTINGS,
+  DEFAULT_FACULTY_BANNER_SETTINGS,
+};
 
 async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSettings> {
   const t = await db.tenant.findUnique({ where: { id: tenantId } });
   if (!t) throw errors.not_found();
-  const settingsObj = (t.settings as { palette?: unknown; hero?: unknown; servicesSection?: unknown }) ?? {};
+  const settingsObj = (t.settings as {
+    palette?: unknown;
+    hero?: unknown;
+    servicesSection?: unknown;
+    newsSection?: unknown;
+    facultyBanner?: unknown;
+  }) ?? {};
   const p = settingsObj.palette;
   const rawHero = (settingsObj.hero as Partial<HeroSettings>) ?? {};
   const hero: HeroSettings = {
@@ -52,6 +76,18 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     items: rawServices.items?.length ? rawServices.items : DEFAULT_SERVICES_SECTION_SETTINGS.items,
   };
 
+  const rawNews = (settingsObj.newsSection as Partial<NewsSectionSettings>) ?? {};
+  const newsSection: NewsSectionSettings = {
+    ...DEFAULT_NEWS_SECTION_SETTINGS,
+    ...rawNews,
+  };
+
+  const rawFaculty = (settingsObj.facultyBanner as Partial<FacultyBannerSettings>) ?? {};
+  const facultyBanner: FacultyBannerSettings = {
+    ...DEFAULT_FACULTY_BANNER_SETTINGS,
+    ...rawFaculty,
+  };
+
   return {
     code: t.code,
     nameTh: t.nameTh,
@@ -60,6 +96,8 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     palette: isPalette(p) ? p : DEFAULT_PALETTE,
     hero,
     servicesSection,
+    newsSection,
+    facultyBanner,
   };
 }
 
@@ -67,7 +105,7 @@ export async function getTenantSettings(tenantId: string): Promise<TenantSetting
   return readTenantSettings(tenantId, prisma);
 }
 
-/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette, hero, servicesSection ไม่ทับทั้งก้อน */
+/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette, hero, servicesSection, newsSection, facultyBanner ไม่ทับทั้งก้อน */
 export async function updateTenantSettings(input: { tenantId: string; actorId: string } & UpdateSettingsInput): Promise<void> {
   await prisma.$transaction(async (tx) => {
     // อ่านผ่าน tx เดียวกัน ไม่ใช่ client กลาง
@@ -79,6 +117,8 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
       palette: input.palette,
       ...(input.hero ? { hero: input.hero } : {}),
       ...(input.servicesSection ? { servicesSection: input.servicesSection } : {}),
+      ...(input.newsSection ? { newsSection: input.newsSection } : {}),
+      ...(input.facultyBanner ? { facultyBanner: input.facultyBanner } : {}),
     };
     await tx.tenant.update({
       where: { id: input.tenantId },

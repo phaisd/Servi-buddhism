@@ -20,7 +20,11 @@ import {
   Heart,
   ShieldCheck,
 } from "lucide-react";
-import { DEFAULT_SERVICES_SECTION_SETTINGS } from "@/features/identity";
+import {
+  DEFAULT_SERVICES_SECTION_SETTINGS,
+  DEFAULT_NEWS_SECTION_SETTINGS,
+  DEFAULT_FACULTY_BANNER_SETTINGS,
+} from "@/features/identity";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
@@ -44,10 +48,16 @@ export default async function PortalIndexPage() {
     resolvePublicTenantId(),
   ]);
 
-  const { items: latestNews } = await getPublicNewsList(tenantId, {
-    page: 1,
-    pageSize: 4,
-  }).catch(() => ({ items: [], total: 0 }));
+  const newsConfig = settings?.newsSection ?? DEFAULT_NEWS_SECTION_SETTINGS;
+  const facultyConfig = settings?.facultyBanner ?? DEFAULT_FACULTY_BANNER_SETTINGS;
+
+  const newsRes = newsConfig.enabled
+    ? await getPublicNewsList(tenantId, {
+        page: 1,
+        pageSize: newsConfig.pageSize || 4,
+      }).catch(() => ({ items: [] }))
+    : { items: [] };
+  const latestNews = newsRes.items;
 
   const servicesConfig = settings?.servicesSection ?? DEFAULT_SERVICES_SECTION_SETTINGS;
   const activeServiceItems = (servicesConfig.items ?? []).filter((s) => s.enabled !== false);
@@ -147,25 +157,37 @@ export default async function PortalIndexPage() {
         )}
 
         {/* ══════════ Section 2: Latest News & Activities ══════════ */}
-        {latestNews.length > 0 && (
+        {newsConfig.enabled && latestNews.length > 0 && (
           <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b pb-4">
               <div>
                 <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
                   <Calendar className="h-3.5 w-3.5" />
-                  <span>{locale === "th" ? "ประชาสัมพันธ์" : "Announcements"}</span>
+                  <span>
+                    {locale === "th"
+                      ? newsConfig.eyebrowTh || "ประชาสัมพันธ์"
+                      : newsConfig.eyebrowEn || "Announcements"}
+                  </span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
-                  {locale === "th" ? "ข่าวสารและกิจกรรมล่าสุด" : "Latest News & Events"}
+                  {locale === "th"
+                    ? newsConfig.titleTh || "ข่าวสารและกิจกรรมล่าสุด"
+                    : newsConfig.titleEn || "Latest News & Events"}
                 </h2>
               </div>
-              <Link
-                href="/portal/news"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
-              >
-                <span>{locale === "th" ? "ดูข่าวสารทั้งหมด" : "All News"}</span>
-                <ChevronRight className="h-4 w-4" />
-              </Link>
+              {newsConfig.showViewAll && (
+                <Link
+                  href={newsConfig.viewAllHref || "/portal/news"}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
+                >
+                  <span>
+                    {locale === "th"
+                      ? newsConfig.viewAllTextTh || "ดูข่าวสารทั้งหมด"
+                      : newsConfig.viewAllTextEn || "All News"}
+                  </span>
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -220,45 +242,57 @@ export default async function PortalIndexPage() {
         )}
 
         {/* ══════════ Section 3: Faculty Personnel & Community Banner ══════════ */}
-        <section className="relative rounded-3xl overflow-hidden p-8 sm:p-12 border border-border/60 bg-gradient-to-r from-card to-muted/50 flex flex-col lg:flex-row items-center justify-between gap-8">
-          <div className="max-w-xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-              <Users className="h-3.5 w-3.5" />
-              <span>{locale === "th" ? "คณาจารย์ผู้ทรงคุณวุฒิ" : "Distinguished Faculty"}</span>
+        {facultyConfig.enabled && (
+          <section className="relative rounded-3xl overflow-hidden p-8 sm:p-12 border border-border/60 bg-gradient-to-r from-card to-muted/50 flex flex-col lg:flex-row items-center justify-between gap-8">
+            <div className="max-w-xl space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                <Users className="h-3.5 w-3.5" />
+                <span>
+                  {locale === "th"
+                    ? facultyConfig.badgeTh || "คณาจารย์ผู้ทรงคุณวุฒิ"
+                    : facultyConfig.badgeEn || "Distinguished Faculty"}
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                {locale === "th"
+                  ? facultyConfig.headingTh || "รวมคณาจารย์และนักวิชาการพระพุทธศาสนาระดับโลก"
+                  : facultyConfig.headingEn || "World-Class Buddhist Scholars & Academic Faculty"}
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {locale === "th"
+                  ? facultyConfig.descTh
+                  : facultyConfig.descEn || facultyConfig.descTh}
+              </p>
+              <div className="pt-2">
+                <Link
+                  href={facultyConfig.buttonHref || "/portal/personnel"}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-semibold text-xs tracking-wider uppercase hover:opacity-90 transition-opacity"
+                >
+                  <span>
+                    {locale === "th"
+                      ? facultyConfig.buttonLabelTh || "ทำเนียบคณาจารย์และบุคลากร"
+                      : facultyConfig.buttonLabelEn || "View Faculty Directory"}
+                  </span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              {locale === "th"
-                ? "รวมคณาจารย์และนักวิชาการพระพุทธศาสนาระดับโลก"
-                : "World-Class Buddhist Scholars & Academic Faculty"}
-            </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {locale === "th"
-                ? "พบกับผู้เชี่ยวชาญด้านพระไตรปิฎกศึกษา ปรัชญา ศาสนาเปรียบเทียบ และการบริหารจัดการศึกษา ที่พร้อมถ่ายทอดองค์ความรู้แก่นิสิตทุกระดับชั้น"
-                : "Learn from specialized professors in Tipitaka studies, Buddhist philosophy, and comparative religion."}
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/portal/personnel"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-semibold text-xs tracking-wider uppercase hover:opacity-90 transition-opacity"
-              >
-                <span>{locale === "th" ? "ทำเนียบคณาจารย์และบุคลากร" : "View Faculty Directory"}</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
 
-          <div className="flex -space-x-4 overflow-hidden p-4">
-            <div className="h-20 w-20 rounded-full border-4 border-background bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-              MCU
-            </div>
-            <div className="h-20 w-20 rounded-full border-4 border-background bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-              ธรรม
-            </div>
-            <div className="h-20 w-20 rounded-full border-4 border-background bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-              ปัญญา
-            </div>
-          </div>
-        </section>
+            {facultyConfig.showCircles && (
+              <div className="flex -space-x-4 overflow-hidden p-4">
+                <div className="h-20 w-20 rounded-full border-4 border-background bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                  {facultyConfig.circle1Text || "MCU"}
+                </div>
+                <div className="h-20 w-20 rounded-full border-4 border-background bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                  {facultyConfig.circle2Text || "ธรรม"}
+                </div>
+                <div className="h-20 w-20 rounded-full border-4 border-background bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                  {facultyConfig.circle3Text || "ปัญญา"}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

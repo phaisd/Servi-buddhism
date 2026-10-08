@@ -16,7 +16,15 @@ export type {
   HeroSocialLink,
   ServicesSectionSettings,
   ServiceItem,
+  NewsSectionSettings,
+  FacultyBannerSettings,
 } from "./_internal/validations/settings";
-export { DEFAULT_HERO_SETTINGS, DEFAULT_SERVICES_SECTION_SETTINGS } from "./_internal/validations/settings";
+export {
+  DEFAULT_HERO_SETTINGS,
+  DEFAULT_SERVICES_SECTION_SETTINGS,
+  DEFAULT_NEWS_SECTION_SETTINGS,
+  DEFAULT_FACULTY_BANNER_SETTINGS,
+} from "./_internal/validations/settings";
+
 
 

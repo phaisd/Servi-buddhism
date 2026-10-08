@@ -2,22 +2,29 @@
 import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Upload, X, Loader2, Image as ImageIcon, Building, Sparkles, Grid } from "lucide-react";
+import { Upload, X, Loader2, Image as ImageIcon, Building, Sparkles, Grid, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiyonCard, LiyonField, PalettePicker } from "@/shared/components/liyon";
 import { useT } from "@/shared/lib/i18n/client";
 import { cn } from "@/shared/lib/utils";
 import type { PaletteId } from "@/shared/lib/palette";
-import { DEFAULT_HERO_SETTINGS, DEFAULT_SERVICES_SECTION_SETTINGS, type TenantSettings } from "@/features/identity";
+import {
+  DEFAULT_HERO_SETTINGS,
+  DEFAULT_SERVICES_SECTION_SETTINGS,
+  DEFAULT_NEWS_SECTION_SETTINGS,
+  DEFAULT_FACULTY_BANNER_SETTINGS,
+  type TenantSettings,
+} from "@/features/identity";
 import { updateSettingsAction, uploadLogoAction } from "@/features/identity/actions";
 import { HeroSettingsTab } from "./hero-settings-tab";
 import { ServicesSettingsTab } from "./services-settings-tab";
+import { PortalContentSettingsTab } from "./portal-content-settings-tab";
 
 export function SettingsForm({ initial }: { initial: TenantSettings }) {
   const t = useT();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<"general" | "hero" | "services">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "hero" | "services" | "content">("general");
   const [form, setForm] = useState({
     nameTh: initial.nameTh,
     nameEn: initial.nameEn,
@@ -25,6 +32,8 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
     palette: initial.palette as PaletteId,
     hero: initial.hero ?? DEFAULT_HERO_SETTINGS,
     servicesSection: initial.servicesSection ?? DEFAULT_SERVICES_SECTION_SETTINGS,
+    newsSection: initial.newsSection ?? DEFAULT_NEWS_SECTION_SETTINGS,
+    facultyBanner: initial.facultyBanner ?? DEFAULT_FACULTY_BANNER_SETTINGS,
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [pending, start] = useTransition();
@@ -152,6 +161,19 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
           <Grid className="w-4 h-4" />
           <span>บริการสำคัญ & หลักสูตร (Quick Services)</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("content")}
+          className={cn(
+            "px-4 py-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 -mb-px",
+            activeTab === "content"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Newspaper className="w-4 h-4" />
+          <span>ข่าวสาร & แบนเนอร์คณาจารย์</span>
+        </button>
       </div>
 
       <div className="set-cards">
@@ -164,6 +186,13 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
           <ServicesSettingsTab
             value={form.servicesSection}
             onChange={(s) => setForm((prev) => ({ ...prev, servicesSection: s }))}
+          />
+        ) : activeTab === "content" ? (
+          <PortalContentSettingsTab
+            newsValue={form.newsSection}
+            onNewsChange={(n) => setForm((prev) => ({ ...prev, newsSection: n }))}
+            bannerValue={form.facultyBanner}
+            onBannerChange={(b) => setForm((prev) => ({ ...prev, facultyBanner: b }))}
           />
         ) : (
           <>
