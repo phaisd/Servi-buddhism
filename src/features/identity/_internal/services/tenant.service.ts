@@ -3,31 +3,152 @@ import { prisma, type Db } from "@/shared/lib/infra/prisma";
 import { DEFAULT_PALETTE, isPalette, type PaletteId } from "@/shared/lib/palette";
 import { errors } from "@/shared/lib/errors";
 import { writeAudit } from "../audit";
-import type { UpdateSettingsInput } from "../validations/settings";
+import type { UpdateSettingsInput, HeroSettingsInput, HeroNavLinkInput, HeroSocialLinkInput } from "../validations/settings";
 
-export interface TenantSettings { code: string; nameTh: string; nameEn: string; logoUrl: string | null; palette: PaletteId }
+export type HeroSettings = HeroSettingsInput;
+export type HeroNavLink = HeroNavLinkInput;
+export type HeroSocialLink = HeroSocialLinkInput;
+
+export const DEFAULT_HERO_SETTINGS: HeroSettings = {
+  enabled: true,
+  layout: "center-motion",
+  heightMode: "screen-90",
+  bgImageUrl: "/buddhist-hero-bg.jpg",
+  bgModeDefault: "subtle",
+  showBgToggle: true,
+  showMotionArtwork: true,
+  motionArtworkUrl: "/ember_animation_30fps.webp",
+  motionPreviewUrl: "/ember_preview.gif",
+  topTypography: {
+    enabled: true,
+    text: "EMBER",
+    linkHref: "/portal/news",
+  },
+  bottomWatermark: {
+    enabled: true,
+    text: "STUDIO",
+  },
+  manifesto: {
+    enabled: true,
+    badgeTextTh: "เกี่ยวกับเรา",
+    badgeTextEn: "ABOUT",
+    headingTh: "",
+    headingEn: "",
+    bodyTh: "เราผสานแก่นธรรมโบราณเข้ากับนวัตกรรมแห่งอนาคต สร้างสรรค์ผู้นำทางจิตปัญญา ผ่านการศึกษาและวิจัยชั้นนำระดับสากล",
+    bodyEn: "We shape striking digital identities through bold contrasts and meaningful motion. Our design process transforms the primal into the powerful.",
+  },
+  header: {
+    showLogo: true,
+    showBrandText: true,
+    customBrandText: "",
+    showLanguageSwitcher: true,
+    showThemeToggle: true,
+    showAvatarMenu: true,
+    contactPill: {
+      enabled: true,
+      labelTh: "ติดต่อเรา",
+      labelEn: "CONTACTS",
+      href: "/portal/documents",
+    },
+    navLinks: [
+      { id: "news", labelTh: "WORKS / ข่าวสาร", labelEn: "WORKS", href: "/portal/news", enabled: true },
+      { id: "programs", labelTh: "SERVICES / บริการ", labelEn: "SERVICES", href: "/portal/programs", enabled: true },
+      { id: "personnel", labelTh: "ABOUT / บุคลากร", labelEn: "ABOUT", href: "/portal/personnel", enabled: true },
+      { id: "events", labelTh: "TEAM / กิจกรรม", labelEn: "TEAM", href: "/portal/events", enabled: true },
+    ],
+  },
+  footerRail: {
+    enabled: true,
+    ctaButton: {
+      enabled: true,
+      eyebrow: "DOUBLE CLICK AND",
+      labelTh: "สำรวจบริการและผลงาน",
+      labelEn: "EXPLORE OUR WORK",
+      href: "/portal/programs",
+    },
+    socialLinks: [
+      { id: "fb", label: "FACEBOOK", href: "https://facebook.com", enabled: true },
+      { id: "ig", label: "INSTAGRAM", href: "https://instagram.com", enabled: true },
+      { id: "tg", label: "TELEGRAM", href: "https://t.me", enabled: true },
+    ],
+    locationText: {
+      enabled: true,
+      title: "",
+      address: "WANG NOI, AYUTTHAYA 13170, THAILAND",
+    },
+  },
+};
+
+export interface TenantSettings {
+  code: string;
+  nameTh: string;
+  nameEn: string;
+  logoUrl: string | null;
+  palette: PaletteId;
+  hero: HeroSettings;
+}
 
 async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSettings> {
   const t = await db.tenant.findUnique({ where: { id: tenantId } });
   if (!t) throw errors.not_found();
-  const p = (t.settings as { palette?: unknown }).palette;
-  return { code: t.code, nameTh: t.nameTh, nameEn: t.nameEn, logoUrl: t.logoUrl, palette: isPalette(p) ? p : DEFAULT_PALETTE };
+  const settingsObj = (t.settings as { palette?: unknown; hero?: unknown }) ?? {};
+  const p = settingsObj.palette;
+  const rawHero = (settingsObj.hero as Partial<HeroSettings>) ?? {};
+  const hero: HeroSettings = {
+    ...DEFAULT_HERO_SETTINGS,
+    ...rawHero,
+    topTypography: { ...DEFAULT_HERO_SETTINGS.topTypography, ...(rawHero.topTypography ?? {}) },
+    bottomWatermark: { ...DEFAULT_HERO_SETTINGS.bottomWatermark, ...(rawHero.bottomWatermark ?? {}) },
+    manifesto: { ...DEFAULT_HERO_SETTINGS.manifesto, ...(rawHero.manifesto ?? {}) },
+    header: {
+      ...DEFAULT_HERO_SETTINGS.header,
+      ...(rawHero.header ?? {}),
+      contactPill: { ...DEFAULT_HERO_SETTINGS.header.contactPill, ...(rawHero.header?.contactPill ?? {}) },
+      navLinks: rawHero.header?.navLinks?.length ? rawHero.header.navLinks : DEFAULT_HERO_SETTINGS.header.navLinks,
+    },
+    footerRail: {
+      ...DEFAULT_HERO_SETTINGS.footerRail,
+      ...(rawHero.footerRail ?? {}),
+      ctaButton: { ...DEFAULT_HERO_SETTINGS.footerRail.ctaButton, ...(rawHero.footerRail?.ctaButton ?? {}) },
+      socialLinks: rawHero.footerRail?.socialLinks?.length ? rawHero.footerRail.socialLinks : DEFAULT_HERO_SETTINGS.footerRail.socialLinks,
+      locationText: { ...DEFAULT_HERO_SETTINGS.footerRail.locationText, ...(rawHero.footerRail?.locationText ?? {}) },
+    },
+  };
+
+  return {
+    code: t.code,
+    nameTh: t.nameTh,
+    nameEn: t.nameEn,
+    logoUrl: t.logoUrl,
+    palette: isPalette(p) ? p : DEFAULT_PALETTE,
+    hero,
+  };
 }
 
 export async function getTenantSettings(tenantId: string): Promise<TenantSettings> {
   return readTenantSettings(tenantId, prisma);
 }
 
-/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge เฉพาะ palette ที่เปลี่ยน ไม่ทับทั้งก้อน */
+/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette & hero ไม่ทับทั้งก้อน */
 export async function updateTenantSettings(input: { tenantId: string; actorId: string } & UpdateSettingsInput): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    // อ่านผ่าน tx เดียวกัน ไม่ใช่ client กลาง — ไม่งั้นทรานแซกชันนี้กินคอนเนกชันจากพูลเพิ่มอีกเส้นเพื่ออ่าน
-    // ค่าเดิม และค่าที่อ่านได้ก็อยู่นอกสแนปช็อตของทรานแซกชัน (ค่า before ของ audit อาจไม่ตรงกับที่กำลังจะทับ)
+    // อ่านผ่าน tx เดียวกัน ไม่ใช่ client กลาง
     const before = await readTenantSettings(input.tenantId, tx);
     const t = await tx.tenant.findUniqueOrThrow({ where: { id: input.tenantId }, select: { settings: true } });
+    const existing = (t.settings as object) ?? {};
+    const updatedSettings = {
+      ...existing,
+      palette: input.palette,
+      ...(input.hero ? { hero: input.hero } : {}),
+    };
     await tx.tenant.update({
       where: { id: input.tenantId },
-      data: { nameTh: input.nameTh, nameEn: input.nameEn, logoUrl: input.logoUrl || null, settings: { ...(t.settings as object), palette: input.palette } },
+      data: {
+        nameTh: input.nameTh,
+        nameEn: input.nameEn,
+        logoUrl: input.logoUrl || null,
+        settings: updatedSettings,
+      },
     });
     await writeAudit({ tenantId: input.tenantId, actorId: input.actorId, action: "tenant.settings_update", entity: "tenant", entityId: input.tenantId, before, after: input }, tx);
   });

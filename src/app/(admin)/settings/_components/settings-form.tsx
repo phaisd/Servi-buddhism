@@ -2,20 +2,28 @@
 import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { Upload, X, Loader2, Image as ImageIcon, Building, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiyonCard, LiyonField, PalettePicker } from "@/shared/components/liyon";
 import { useT } from "@/shared/lib/i18n/client";
 import { cn } from "@/shared/lib/utils";
 import type { PaletteId } from "@/shared/lib/palette";
-import type { TenantSettings } from "@/features/identity";
+import { DEFAULT_HERO_SETTINGS, type TenantSettings } from "@/features/identity";
 import { updateSettingsAction, uploadLogoAction } from "@/features/identity/actions";
+import { HeroSettingsTab } from "./hero-settings-tab";
 
 export function SettingsForm({ initial }: { initial: TenantSettings }) {
   const t = useT();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [form, setForm] = useState({ nameTh: initial.nameTh, nameEn: initial.nameEn, logoUrl: initial.logoUrl ?? "", palette: initial.palette as PaletteId });
+  const [activeTab, setActiveTab] = useState<"general" | "hero">("general");
+  const [form, setForm] = useState({
+    nameTh: initial.nameTh,
+    nameEn: initial.nameEn,
+    logoUrl: initial.logoUrl ?? "",
+    palette: initial.palette as PaletteId,
+    hero: initial.hero ?? DEFAULT_HERO_SETTINGS,
+  });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [pending, start] = useTransition();
   const [uploading, setUploading] = useState(false);
@@ -100,9 +108,47 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
   return (
     <>
       <header className="ph"><h1>{t("settings.title")}</h1></header>
+
+      {/* Tabs navigation */}
+      <div className="flex items-center gap-2 border-b border-border/80 mb-6 px-1 max-w-5xl">
+        <button
+          type="button"
+          onClick={() => setActiveTab("general")}
+          className={cn(
+            "px-4 py-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 -mb-px",
+            activeTab === "general"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Building className="w-4 h-4" />
+          <span>ข้อมูลองค์กร & แบรนด์</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("hero")}
+          className={cn(
+            "px-4 py-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 -mb-px",
+            activeTab === "hero"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>ปรับแต่ง Hero Section (หน้าแรก Portal)</span>
+        </button>
+      </div>
+
       <div className="set-cards">
-        <LiyonCard>
-          <h2>{t("settings.orgTitle")}</h2>
+        {activeTab === "hero" ? (
+          <HeroSettingsTab
+            value={form.hero}
+            onChange={(h) => setForm((prev) => ({ ...prev, hero: h }))}
+          />
+        ) : (
+          <>
+            <LiyonCard>
+              <h2>{t("settings.orgTitle")}</h2>
           <div className="fields">
             <LiyonField label={t("settings.nameTh")} htmlFor="s-name-th" error={errors.nameTh?.[0]}><input id="s-name-th" value={form.nameTh} onChange={(e) => setForm({ ...form, nameTh: e.target.value })} /></LiyonField>
             <LiyonField label={t("settings.nameEn")} htmlFor="s-name-en" error={errors.nameEn?.[0]}><input id="s-name-en" value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} /></LiyonField>
@@ -230,6 +276,8 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
           <PalettePicker value={form.palette} onChange={(p) => setForm({ ...form, palette: p })} label={t("settings.paletteLabel")} />
           {form.palette === "coral" && <p className="warn" role="note">{t("settings.coralWarn")}</p>}
         </LiyonCard>
+        </>
+        )}
         <div className="savebar"><Button type="button" onClick={save} disabled={pending}>{t("common.save")}</Button></div>
       </div>
     </>
