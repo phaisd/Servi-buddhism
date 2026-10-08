@@ -100,15 +100,26 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
         {/* Top-Left: Logo & Brand Symbol */}
         <div className="flex items-center gap-10">
           <Link href="/portal" className="flex items-center gap-2.5 group">
-            {/* 4-block orange logo grid icon from EMBER.dsgn */}
-            <div className="grid grid-cols-2 gap-0.5 w-4 h-4 shrink-0 transition-transform duration-300 group-hover:rotate-90">
-              <span className="w-1.5 h-1.5 bg-[#ff5522] rounded-[1px]" />
-              <span className="w-1.5 h-1.5 bg-[#ff5522] rounded-[1px]" />
-              <span className="w-1.5 h-1.5 bg-[#ff5522] rounded-[1px]" />
-              <span className="w-1.5 h-1.5 bg-[#ff5522] rounded-[1px]" />
-            </div>
+            {tenantSettings?.logoUrl ? (
+              <div className="h-8 w-8 rounded-lg bg-white/95 p-1 shadow-xs border border-black/10 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={tenantSettings.logoUrl}
+                  alt={brandName}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+            ) : (
+              /* 4-block orange logo grid icon fallback from EMBER.dsgn */
+              <div className="grid grid-cols-2 gap-0.5 w-4 h-4 shrink-0 transition-transform duration-300 group-hover:rotate-90">
+                <span className="w-1.5 h-1.5 bg-[#ff5522] rounded-[1px]" />
+                <span className="w-1.5 h-1.5 bg-[#ff5522] rounded-[1px]" />
+                <span className="w-1.5 h-1.5 bg-[#ff5522] rounded-[1px]" />
+                <span className="w-1.5 h-1.5 bg-[#ff5522] rounded-[1px]" />
+              </div>
+            )}
             <span className="font-extrabold text-sm sm:text-base tracking-tight text-[#16181d] uppercase transition-colors group-hover:text-black">
-              BUDDHISM<span className="text-[#ff5522]">.dsgn</span>
+              {brandName}
             </span>
           </Link>
 

@@ -104,8 +104,9 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
     <header className="adm-head sticky top-0 z-40 w-full px-4 sm:px-6">
       {/* Brand Block matching Admin */}
       <Link className="brand-blk !w-auto mr-4 hover:opacity-90 transition-opacity" href="/portal">
-        <i>
+        <i className={tenantSettings?.logoUrl ? "!bg-background !border !border-border/60 shadow-xs overflow-hidden" : undefined}>
           {tenantSettings?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={tenantSettings.logoUrl}
               alt={brandName}
