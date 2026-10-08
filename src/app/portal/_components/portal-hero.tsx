@@ -16,6 +16,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAppSession } from "@/hooks/use-session";
+import { useTheme } from "next-themes";
 import type { TenantSettings } from "@/features/identity";
 
 interface PortalHeroProps {
@@ -24,6 +25,7 @@ interface PortalHeroProps {
 }
 
 export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
+  const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, isSuperAdmin } = useAppSession();
   const initials = (user?.name ?? "?").trim().charAt(0).toUpperCase() || "?";
   const [activeTab, setActiveTab] = React.useState<"TH" | "EN">(locale === "th" ? "TH" : "EN");
@@ -156,8 +158,25 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
           </nav>
         </div>
 
-        {/* Top-Right: Language Selector & Pill Contacts */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        {/* Top-Right: Theme Toggle, Language Selector & Pill Contacts */}
+        <div className="flex items-center gap-2.5 sm:gap-3.5">
+          {/* Theme Toggle Button matching Admin */}
+          <button
+            type="button"
+            className="icon-btn !w-8 !h-8 !rounded-full !bg-white/40 hover:!bg-white/60 !backdrop-blur-md !border !border-black/15 shadow-xs cursor-pointer flex items-center justify-center text-[#22252a] transition-all hover:scale-105"
+            aria-label="Toggle theme (light/dark)"
+            title="Toggle theme (light/dark)"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <svg className="sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.2" />
+              <path d="M12 2v2.3M12 19.7V22M2 12h2.3M19.7 12H22M5.1 5.1l1.6 1.6M17.3 17.3l1.6 1.6M18.9 5.1l-1.6 1.6M6.7 17.3l-1.6 1.6" />
+            </svg>
+            <svg className="moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.2 14.7A8.3 8.3 0 0 1 9.3 3.8a8.5 8.5 0 1 0 10.9 10.9Z" />
+            </svg>
+          </button>
+
           <div className="flex items-center text-[11px] font-bold text-[#555a64] tracking-widest bg-white/20 backdrop-blur-md rounded-full px-2 py-0.5 border border-black/10">
             <button
               type="button"
