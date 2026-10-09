@@ -20,6 +20,8 @@ export const heroSettingsSchema = z.object({
   enabled: z.boolean().default(true),
   layout: z.enum(["center-motion", "split", "minimal"]).default("center-motion"),
   heightMode: z.enum(["full", "screen-90", "compact"]).default("screen-90"),
+  textTone: z.enum(["dark", "navy", "amber", "crimson", "emerald", "slate", "custom"]).default("dark"),
+  customTextColor: z.string().optional().default(""),
   bgImageUrl: z.string().optional().default(""),
   bgModeDefault: z.enum(["subtle", "vivid", "minimal", "hidden"]).default("subtle"),
   showBgToggle: z.boolean().default(true),
@@ -340,11 +342,14 @@ export const DEFAULT_SERVICES_SECTION_SETTINGS: ServicesSectionSettings = {
 export type HeroSettings = HeroSettingsInput;
 export type HeroNavLink = HeroNavLinkInput;
 export type HeroSocialLink = HeroSocialLinkInput;
+export type HeroTextTone = NonNullable<HeroSettings["textTone"]>;
 
 export const DEFAULT_HERO_SETTINGS: HeroSettings = {
   enabled: true,
   layout: "center-motion",
   heightMode: "screen-90",
+  textTone: "dark",
+  customTextColor: "",
   bgImageUrl: "/buddhist-hero-bg.jpg",
   bgModeDefault: "subtle",
   showBgToggle: true,

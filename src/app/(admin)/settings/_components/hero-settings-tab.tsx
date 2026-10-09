@@ -1,13 +1,35 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Trash2, Eye, EyeOff, Layout, Image as ImageIcon, Type, Compass, Share2, Upload, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Eye,
+  EyeOff,
+  Layout,
+  Image as ImageIcon,
+  Type,
+  Compass,
+  Share2,
+  Upload,
+  Loader2,
+  Palette,
+  Sparkles,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiyonCard, LiyonField, LiyonSelect, LiyonSwitch } from "@/shared/components/liyon";
 import { cn } from "@/shared/lib/utils";
 import { toast } from "sonner";
 import { uploadLogoAction } from "@/features/identity/actions";
-import type { HeroSettings, HeroNavLink, HeroSocialLink } from "@/features/identity";
+import {
+  HERO_TONE_CONFIGS,
+  getHeroToneConfig,
+  type HeroSettings,
+  type HeroNavLink,
+  type HeroSocialLink,
+  type HeroTextTone,
+} from "@/features/identity";
 
 interface HeroSettingsTabProps {
   value: HeroSettings;
@@ -265,6 +287,138 @@ export function HeroSettingsTab({ value, onChange }: HeroSettingsTabProps) {
         </div>
 
         <div className="space-y-5">
+          {/* โทนสีตัวอักษรและคอนทราสต์ (Text Color Tone & Readability) */}
+          <div className="p-4 rounded-xl border bg-muted/20 space-y-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-primary" />
+                <p className="text-sm font-semibold">โทนสีตัวอักษรและคอนทราสต์ (Text Color Tone & Readability)</p>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                ปรับโทนสีของตัวอักษรและหัวข้อใน Hero Section ได้ตามต้องการ พร้อมเทคโนโลยีรักษาความชัดเจนไม่ให้กลืนกับภาพพื้นหลัง
+              </p>
+            </div>
+
+            {/* Presets Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+              {(Object.keys(HERO_TONE_CONFIGS) as Array<keyof typeof HERO_TONE_CONFIGS>).map((toneKey) => {
+                const conf = HERO_TONE_CONFIGS[toneKey];
+                const isSelected = (value.textTone ?? "dark") === toneKey;
+                return (
+                  <button
+                    key={toneKey}
+                    type="button"
+                    onClick={() => update("textTone", toneKey as HeroTextTone)}
+                    className={cn(
+                      "flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer",
+                      isSelected
+                        ? "border-primary bg-primary/10 shadow-xs ring-2 ring-primary/20"
+                        : "border-border bg-background hover:bg-muted/40"
+                    )}
+                  >
+                    <span
+                      className="w-5 h-5 rounded-full shrink-0 shadow-xs border border-black/10 flex items-center justify-center text-white text-[11px]"
+                      style={{ backgroundColor: conf.swatchHex }}
+                    >
+                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate leading-tight">{conf.nameTh.split(" (")[0]}</p>
+                      <p className="text-[10px] text-muted-foreground truncate leading-tight">{conf.nameEn}</p>
+                    </div>
+                  </button>
+                );
+              })}
+
+              {/* Custom Color Option */}
+              <button
+                type="button"
+                onClick={() => update("textTone", "custom")}
+                className={cn(
+                  "flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer",
+                  value.textTone === "custom"
+                    ? "border-primary bg-primary/10 shadow-xs ring-2 ring-primary/20"
+                    : "border-border bg-background hover:bg-muted/40"
+                )}
+              >
+                <span
+                  className="w-5 h-5 rounded-full shrink-0 shadow-xs border border-black/10 flex items-center justify-center text-white"
+                  style={{
+                    background: "linear-gradient(135deg, #f43f5e, #8b5cf6, #06b6d4)",
+                  }}
+                >
+                  {value.textTone === "custom" && <Check className="w-3 h-3 stroke-[3]" />}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold truncate leading-tight">กำหนดสีเอง</p>
+                  <p className="text-[10px] text-muted-foreground truncate leading-tight">Custom Hex</p>
+                </div>
+              </button>
+            </div>
+
+            {/* If Custom, show Color Picker & Hex Input */}
+            {value.textTone === "custom" && (
+              <div className="pt-2 border-t flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={value.customTextColor || "#0f172a"}
+                    onChange={(e) => update("customTextColor", e.target.value)}
+                    className="w-9 h-9 rounded-lg border border-border cursor-pointer p-0.5 bg-background"
+                  />
+                  <input
+                    type="text"
+                    value={value.customTextColor || ""}
+                    onChange={(e) => update("customTextColor", e.target.value)}
+                    placeholder="#0f172a"
+                    className="w-28 px-2.5 py-1.5 text-xs font-mono rounded-lg border border-border bg-background"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ใส่รหัสสี Hex เพื่อกำหนดโทนสีของหัวข้อและตัวอักษรทั้งหมดในส่วน Hero
+                </p>
+              </div>
+            )}
+
+            {/* Live Preview Box */}
+            {(() => {
+              const previewConf = getHeroToneConfig(value.textTone, value.customTextColor);
+              return (
+                <div
+                  className="p-3.5 rounded-xl border transition-all mt-2"
+                  style={{
+                    backgroundColor: previewConf.cardBg,
+                    borderColor: previewConf.cardBorder,
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border"
+                      style={{
+                        backgroundColor: previewConf.badgeBg,
+                        borderColor: previewConf.badgeBorder,
+                        color: previewConf.primaryColor,
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: previewConf.accentColor }} />
+                      ตัวอย่างการแสดงผล (PREVIEW)
+                    </span>
+                    <span className="text-[10px] font-mono font-medium" style={{ color: previewConf.mutedColor }}>
+                      {previewConf.nameEn}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold flex items-center gap-1.5" style={{ color: previewConf.primaryColor }}>
+                    <Sparkles className="w-3.5 h-3.5" style={{ color: previewConf.accentColor }} />
+                    ข้อความหัวข้อคมชัด สบายตา ไม่กลืนกับพื้นหลัง
+                  </h4>
+                  <p className="text-xs font-medium leading-relaxed mt-1" style={{ color: previewConf.bodyColor }}>
+                    ตัวอักษรและรายละเอียดได้รับการออกแบบให้มีความชัดเจนสูง สบายตา และมีเอกลักษณ์ระดับพรีเมียม
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+
           {/* Top Giant Mask Typography */}
           <div className="p-3.5 rounded-xl border bg-muted/20 space-y-3">
             <div className="flex items-center justify-between">

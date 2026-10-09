@@ -7,7 +7,12 @@ import {
   Image as ImageIcon,
   Sparkles,
 } from "lucide-react";
-import { DEFAULT_HERO_SETTINGS, type TenantSettings, type HeroSettings } from "@/features/identity";
+import {
+  DEFAULT_HERO_SETTINGS,
+  getHeroToneConfig,
+  type TenantSettings,
+  type HeroSettings,
+} from "@/features/identity";
 
 interface PortalHeroProps {
   tenantSettings?: TenantSettings | null;
@@ -61,8 +66,15 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
   const watermark = hero.bottomWatermark ?? DEFAULT_HERO_SETTINGS.bottomWatermark;
   const footerSettings = hero.footerRail ?? DEFAULT_HERO_SETTINGS.footerRail;
 
+  const toneConfig = React.useMemo(() => {
+    return getHeroToneConfig(hero.textTone, hero.customTextColor);
+  }, [hero.textTone, hero.customTextColor]);
+
   return (
-    <section className={`relative w-full ${heightClass} bg-gradient-to-r from-[#b7bbc2] via-[#ced1d7] to-[#dadde2] text-[#111317] overflow-hidden select-none font-sans flex flex-col justify-between`}>
+    <section
+      className={`relative w-full ${heightClass} bg-gradient-to-r from-[#b7bbc2] via-[#ced1d7] to-[#dadde2] overflow-hidden select-none font-sans flex flex-col justify-between`}
+      style={{ color: toneConfig.bodyColor }}
+    >
       
       {/* ══════════════════════════════════════════════════════════════
           BACKGROUND COMPONENT LAYER (User's Photo: Faculty Landmark)
@@ -117,64 +129,94 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
          ══════════════════════════════════════════════════════════════ */}
       <div className="relative z-20 flex-1 px-6 sm:px-12 flex flex-col justify-between py-8 sm:py-12 lg:py-16 pointer-events-none">
         
-        {/* Top Typography Row: Giant "EMBER" Mask (Clickable to explore) */}
+        {/* Top Typography Row: Giant Mask Typography (Clickable to explore) */}
         {topTypo.enabled && (
           <div className="relative mt-2 lg:mt-4 pointer-events-auto">
             <Link
               href={topTypo.linkHref || "/portal/news"}
               className="inline-block group cursor-pointer"
             >
-              <span className="text-7xl sm:text-9xl lg:text-[13.5rem] font-black tracking-tighter leading-[0.8] select-none text-transparent uppercase opacity-0 group-hover:opacity-10 transition-opacity">
+              <span
+                className="text-7xl sm:text-9xl lg:text-[13.5rem] font-black tracking-tighter leading-[0.8] select-none uppercase transition-all duration-300 drop-shadow-sm opacity-60 group-hover:opacity-100"
+                style={{
+                  WebkitTextStroke: `2px ${toneConfig.strokeColor}`,
+                  color: toneConfig.maskTextColor,
+                }}
+              >
                 {topTypo.text || "EMBER"}
               </span>
             </Link>
           </div>
         )}
 
-        {/* Middle Manifesto Block (Left side) with Interactive Switcher */}
+        {/* Middle Manifesto Block (Left side) with High-Contrast Glass Card */}
         {manifesto.enabled && (
-          <div className="max-w-xl space-y-4 my-8 lg:my-0 pointer-events-auto">
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-[#ff5522] rounded-full animate-ping" />
-              <p className="text-[11px] font-mono tracking-widest text-[#666d77] uppercase font-semibold">
+          <div className="max-w-xl space-y-3.5 my-8 lg:my-0 pointer-events-auto">
+            {/* Pill Badge */}
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-md shadow-xs border transition-colors"
+              style={{
+                backgroundColor: toneConfig.badgeBg,
+                borderColor: toneConfig.badgeBorder,
+              }}
+            >
+              <span
+                className="w-2 h-2 rounded-full animate-ping"
+                style={{ backgroundColor: toneConfig.accentColor }}
+              />
+              <p
+                className="text-[11px] font-mono tracking-widest uppercase font-bold"
+                style={{ color: toneConfig.primaryColor }}
+              >
                 {activeTab === "TH"
                   ? manifesto.badgeTextTh || manifesto.badgeTextEn || "เกี่ยวกับเรา"
                   : manifesto.badgeTextEn || manifesto.badgeTextTh || "ABOUT"}
               </p>
             </div>
 
-            {activeTab === "TH" ? (
-              <div className="p-4 sm:p-5 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-lg text-[#16181d] space-y-2 animate-in fade-in duration-300">
-                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-black flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#ff5522]" />
-                  <span>{manifesto.headingTh || brandName}</span>
-                </h2>
-                <p className="text-sm sm:text-base font-medium leading-relaxed text-[#2a2f38]">
-                  {manifesto.bodyTh ||
-                    "เราผสานแก่นธรรมโบราณเข้ากับนวัตกรรมแห่งอนาคต สร้างสรรค์ผู้นำทางจิตปัญญา ผ่านการศึกษาและวิจัยชั้นนำระดับสากล"}
-                </p>
-              </div>
-            ) : (
-              <div className="transition-opacity duration-300">
-                {manifesto.headingEn && (
-                  <h2 className="text-lg sm:text-xl font-bold tracking-tight text-black flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-[#ff5522]" />
-                    <span>{manifesto.headingEn}</span>
-                  </h2>
-                )}
-                <p className="text-xl sm:text-2xl lg:text-[28px] font-medium tracking-tight text-[#16181d] leading-snug drop-shadow-xs max-w-lg">
-                  {manifesto.bodyEn ||
+            {/* Manifesto Card (High-Contrast Glassmorphism) */}
+            <div
+              className="p-5 sm:p-6 rounded-2xl backdrop-blur-xl border shadow-xl space-y-2.5 transition-all duration-300 ring-1 ring-black/5 animate-in fade-in duration-300"
+              style={{
+                backgroundColor: toneConfig.cardBg,
+                borderColor: toneConfig.cardBorder,
+              }}
+            >
+              <h2
+                className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2"
+                style={{ color: toneConfig.primaryColor }}
+              >
+                <Sparkles className="w-4 h-4 shrink-0" style={{ color: toneConfig.accentColor }} />
+                <span>
+                  {activeTab === "TH"
+                    ? manifesto.headingTh || brandName
+                    : manifesto.headingEn || brandName}
+                </span>
+              </h2>
+              <p
+                className="text-sm sm:text-base font-medium leading-relaxed"
+                style={{ color: toneConfig.bodyColor }}
+              >
+                {activeTab === "TH"
+                  ? manifesto.bodyTh ||
+                    "เราผสานแก่นธรรมโบราณเข้ากับนวัตกรรมแห่งอนาคต สร้างสรรค์ผู้นำทางจิตปัญญา ผ่านการศึกษาและวิจัยชั้นนำระดับสากล"
+                  : manifesto.bodyEn ||
                     "We shape striking digital identities through bold contrasts and meaningful motion. Our design process transforms the primal into the powerful."}
-                </p>
-              </div>
-            )}
+              </p>
+            </div>
           </div>
         )}
 
         {/* Bottom Giant Typography Watermark Alignment */}
         {watermark.enabled && (
           <div className="absolute right-6 sm:right-12 bottom-10 select-none pointer-events-none hidden sm:block">
-            <span className="text-7xl sm:text-9xl lg:text-[13rem] font-black tracking-tighter text-white/90 drop-shadow-sm leading-none block">
+            <span
+              className="text-7xl sm:text-9xl lg:text-[13rem] font-black tracking-tighter leading-none block select-none drop-shadow-sm transition-colors"
+              style={{
+                WebkitTextStroke: `1.5px ${toneConfig.watermarkStroke}`,
+                color: toneConfig.watermarkColor,
+              }}
+            >
               {watermark.text || "STUDIO"}
             </span>
           </div>
@@ -185,18 +227,26 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
           HERO FOOTER RAIL (Exact EMBER.dsgn Bottom Info Bar)
          ══════════════════════════════════════════════════════════════ */}
       {footerSettings.enabled && (
-        <footer className="relative z-30 w-full px-6 sm:px-12 pb-7 flex flex-wrap items-end justify-between gap-6 text-[11px] font-mono tracking-wider text-[#555a64] uppercase">
+        <footer className="relative z-30 w-full px-6 sm:px-12 pb-7 flex flex-wrap items-end justify-between gap-6 text-[11px] font-mono tracking-wider uppercase">
           {/* Left: Explore CTA Button */}
           {footerSettings.ctaButton?.enabled ? (
             <div className="space-y-1">
               {footerSettings.ctaButton.eyebrow && (
-                <p className="text-[9px] text-[#787e8a] tracking-widest">
+                <p
+                  className="text-[9px] tracking-widest font-bold"
+                  style={{ color: toneConfig.mutedColor }}
+                >
                   {footerSettings.ctaButton.eyebrow}
                 </p>
               )}
               <Link
                 href={footerSettings.ctaButton.href || "/portal/programs"}
-                className="group inline-flex items-center gap-1.5 font-bold text-black hover:text-[#ff5522] transition-colors py-1 px-2.5 rounded-full bg-white/20 hover:bg-white/40 border border-black/10 backdrop-blur-md"
+                className="group inline-flex items-center gap-1.5 font-bold transition-all py-1.5 px-3 rounded-full backdrop-blur-md shadow-xs border hover:brightness-105"
+                style={{
+                  backgroundColor: toneConfig.pillBg,
+                  color: toneConfig.primaryColor,
+                  borderColor: toneConfig.pillBorder,
+                }}
               >
                 <span>
                   {activeTab === "TH"
@@ -213,7 +263,13 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
           {/* Center: Social Links & Background Component Control */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
             {footerSettings.socialLinks && footerSettings.socialLinks.length > 0 && (
-              <div className="flex items-center gap-4">
+              <div
+                className="flex items-center gap-4 px-3.5 py-1.5 rounded-full backdrop-blur-md border shadow-2xs"
+                style={{
+                  backgroundColor: toneConfig.pillBg,
+                  borderColor: toneConfig.pillBorder,
+                }}
+              >
                 {footerSettings.socialLinks
                   .filter((s) => s.enabled !== false)
                   .map((s) => (
@@ -222,7 +278,8 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
                       href={s.href}
                       target="_blank"
                       rel="noreferrer"
-                      className="hover:text-black transition-colors"
+                      className="font-bold transition-opacity hover:opacity-100 opacity-80"
+                      style={{ color: toneConfig.primaryColor }}
                     >
                       • {s.label}
                     </a>
@@ -235,10 +292,15 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
               <button
                 type="button"
                 onClick={cycleBgMode}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-sans font-semibold bg-white/40 hover:bg-white/60 border border-black/15 text-[#16181d] transition-all cursor-pointer shadow-2xs backdrop-blur-md"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-sans font-bold transition-all cursor-pointer shadow-2xs backdrop-blur-md border hover:brightness-105"
+                style={{
+                  backgroundColor: toneConfig.pillBg,
+                  borderColor: toneConfig.pillBorder,
+                  color: toneConfig.primaryColor,
+                }}
                 title="สลับโหมดการแสดงภาพพื้นหลัง (ภาพสถานที่)"
               >
-                <ImageIcon className="w-3 h-3 text-[#ff5522]" />
+                <ImageIcon className="w-3 h-3" style={{ color: toneConfig.accentColor }} />
                 <span>
                   ภาพพื้นหลัง:{" "}
                   {bgMode === "subtle"
@@ -253,12 +315,20 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
 
           {/* Right: Location & Address */}
           {footerSettings.locationText?.enabled && (
-            <div className="text-right text-[#5a606a] leading-tight text-[10px] sm:text-[11px]">
-              <p className="font-semibold text-[#1e2229]">
+            <div
+              className="text-right leading-tight text-[10px] sm:text-[11px] px-3.5 py-1.5 rounded-xl backdrop-blur-md border shadow-2xs"
+              style={{
+                backgroundColor: toneConfig.pillBg,
+                borderColor: toneConfig.pillBorder,
+              }}
+            >
+              <p className="font-bold" style={{ color: toneConfig.primaryColor }}>
                 {footerSettings.locationText.title?.trim() || brandName}
               </p>
               {footerSettings.locationText.address && (
-                <p>{footerSettings.locationText.address}</p>
+                <p className="font-medium" style={{ color: toneConfig.mutedColor }}>
+                  {footerSettings.locationText.address}
+                </p>
               )}
             </div>
           )}

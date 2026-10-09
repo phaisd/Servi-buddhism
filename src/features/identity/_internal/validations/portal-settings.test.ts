@@ -21,6 +21,7 @@ describe("Portal Settings Validations", () => {
       expect(parsed.layout).toBe("center-motion");
       expect(parsed.heightMode).toBe("screen-90");
       expect(parsed.bgModeDefault).toBe("subtle");
+      expect(parsed.textTone).toBe("dark");
       expect(parsed.topTypography.text).toBe("EMBER");
       expect(parsed.bottomWatermark.text).toBe("STUDIO");
     });

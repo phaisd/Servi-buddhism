@@ -12,6 +12,7 @@ export type { RoleAssignment, ListUsersQuery } from "./_internal/validations/use
 export type {
   TenantSettings,
   HeroSettings,
+  HeroTextTone,
   HeroNavLink,
   HeroSocialLink,
   ServicesSectionSettings,
@@ -30,6 +31,8 @@ export {
   DEFAULT_SMTP_SETTINGS,
   smtpSettingsSchema,
 } from "./_internal/validations/settings";
+export type { HeroToneConfig } from "./_internal/hero-tones";
+export { HERO_TONE_CONFIGS, getHeroToneConfig } from "./_internal/hero-tones";
 
 
 
