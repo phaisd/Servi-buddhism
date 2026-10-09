@@ -1,0 +1,71 @@
+services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL Production Database
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: vibe_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vibe_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeThisPasswordInProd2026!}
+      POSTGRES_DB: ${POSTGRES_DB:-vibe_production}
+    ports:
+      # Bind only to host loopback for secure administrative access
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vibe_admin} -d ${POSTGRES_DB:-vibe_production}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vibe_network
+
+  # ----------------------------------------------------------------------------
+  # Next.js Application Production Container (Standalone & Non-Root)
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibe_portal_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vibe_admin}:${POSTGRES_PASSWORD:-ChangeThisPasswordInProd2026!}@db:5432/${POSTGRES_DB:-vibe_production}?schema=public
+      AUTH_SECRET: ${AUTH_SECRET}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      BOOTSTRAP_TENANT_CODE: ${BOOTSTRAP_TENANT_CODE:-MCU}
+      BOOTSTRAP_TENANT_NAME_TH: ${BOOTSTRAP_TENANT_NAME_TH:-คณะพุทธศาสตร์}
+      BOOTSTRAP_TENANT_NAME_EN: ${BOOTSTRAP_TENANT_NAME_EN:-Faculty of Buddhism}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/auth/providers || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+    networks:
+      - vibe_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  vibe_network:
+    driver: bridge
