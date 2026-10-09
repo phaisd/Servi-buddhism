@@ -2,15 +2,15 @@ import type { PrismaClient } from "../../src/generated/prisma";
 import { ALL_PERMISSIONS } from "../../src/permissions";
 import { DEFAULT_ROLES } from "../../src/features/identity/permissions";
 
-export interface SeedCoreOptions { tenantCode: string; nameTh: string; nameEn: string }
+export interface SeedCoreOptions { tenantCode: string; nameTh: string; nameEn: string; logoUrl?: string }
 export interface SeedCoreResult { tenantId: string; roleIds: Record<string, string> }
 
 /** upsert ทั้งหมด รันซ้ำได้ — ใช้โดย seed.ts, bootstrap.ts และ integration test */
 export async function seedCore(db: PrismaClient, opts: SeedCoreOptions): Promise<SeedCoreResult> {
   const tenant = await db.tenant.upsert({
     where: { code: opts.tenantCode },
-    update: {},
-    create: { code: opts.tenantCode, nameTh: opts.nameTh, nameEn: opts.nameEn, settings: { palette: "blue" } },
+    update: opts.logoUrl ? { logoUrl: opts.logoUrl } : {},
+    create: { code: opts.tenantCode, nameTh: opts.nameTh, nameEn: opts.nameEn, settings: { palette: "blue" }, logoUrl: opts.logoUrl ?? null },
   });
 
   const permIds: Record<string, string> = {};

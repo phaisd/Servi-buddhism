@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { LiyonCard, LiyonField, PalettePicker } from "@/shared/components/liyon"
 import { useT } from "@/shared/lib/i18n/client";
 import { cn } from "@/shared/lib/utils";
 import type { PaletteId } from "@/shared/lib/palette";
-import { uploadLogoAction } from "@/features/identity/actions";
+import { uploadLogoAction, removeLogoAction } from "@/features/identity/actions";
 
 interface GeneralSettingsTabProps {
   nameTh: string;
@@ -33,6 +34,7 @@ export function GeneralSettingsTab({
   onChange,
 }: GeneralSettingsTabProps) {
   const t = useT();
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -57,6 +59,7 @@ export function GeneralSettingsTab({
       if (res.ok) {
         onChange({ logoUrl: res.data.url });
         toast.success(t("settings.uploadSuccess"));
+        router.refresh();
       } else {
         toast.error(res.error.fieldErrors?.file?.[0] ?? t("settings.uploadError"));
       }
@@ -202,9 +205,16 @@ export function GeneralSettingsTab({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
                           onChange({ logoUrl: "" });
+                          try {
+                            await removeLogoAction();
+                            toast.success("ลบโลโก้เรียบร้อยแล้ว");
+                            router.refresh();
+                          } catch {
+                            // ignore
+                          }
                         }}
                         className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                         title={t("settings.removeLogo")}

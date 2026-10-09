@@ -73,7 +73,7 @@ async function main() {
     },
   });
 
-  const dept3 = await prisma.department.upsert({
+  await prisma.department.upsert({
     where: { id: "00000000-0000-0000-0000-000000000003" },
     update: {},
     create: {

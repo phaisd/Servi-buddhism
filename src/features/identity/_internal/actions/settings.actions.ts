@@ -9,6 +9,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { errors } from "@/shared/lib/errors";
 import { updateSettingsSchema } from "../validations/settings";
+import { prisma } from "@/shared/lib/infra/prisma";
 import { getTenantSettings, updateTenantSettings, type TenantSettings } from "../services/tenant.service";
 
 export async function getSettingsAction(): Promise<ActionResult<TenantSettings>> {
@@ -56,6 +57,39 @@ export async function uploadLogoAction(formData: FormData): Promise<ActionResult
     const buffer = Buffer.from(await file.arrayBuffer());
     await fs.writeFile(filePath, buffer);
 
-    return { url: `/uploads/${filename}` };
+    const url = `/uploads/${filename}`;
+
+    // บันทึกลงฐานข้อมูลทันที เพื่อให้ทุกหน้าแสดงผลโลโก้ใหม่โดยอัตโนมัติ ไม่สูญหายเมื่อปิด/เปิดใหม่
+    await prisma.tenant.update({
+      where: { id: ctx.tenantId },
+      data: { logoUrl: url },
+    });
+
+    revalidatePath("/", "layout");
+    revalidatePath("/portal", "layout");
+    revalidatePath("/(admin)", "layout");
+    revalidatePath("/(auth)", "layout");
+    revalidatePath("/login");
+    revalidatePath("/settings");
+
+    return { url };
   });
 }
+
+export async function removeLogoAction(): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const ctx = await requirePermission(P.settingsManage);
+    await prisma.tenant.update({
+      where: { id: ctx.tenantId },
+      data: { logoUrl: null },
+    });
+
+    revalidatePath("/", "layout");
+    revalidatePath("/portal", "layout");
+    revalidatePath("/(admin)", "layout");
+    revalidatePath("/(auth)", "layout");
+    revalidatePath("/login");
+    revalidatePath("/settings");
+  });
+}
+

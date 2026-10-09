@@ -46,7 +46,8 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
       const r = await updateSettingsAction(form);
       if (!r.ok) {
         setErrors(r.error.fieldErrors ?? {});
-        if (!r.error.fieldErrors) toast.error(t(`error.${r.error.code}`));
+        const firstError = Object.values(r.error.fieldErrors ?? {}).flat()[0];
+        toast.error(firstError || (r.error.code ? t(`error.${r.error.code}`) : "บันทึกการตั้งค่าไม่สำเร็จ"));
         return;
       }
       setErrors({});

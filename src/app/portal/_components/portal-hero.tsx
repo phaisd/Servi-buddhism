@@ -146,11 +146,11 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-2.5 group">
             {headerSettings.showLogo && (
-              tenantSettings?.logoUrl ? (
+              (tenantSettings?.logoUrl || "/uploads/mcu-logo.png") ? (
                 <div className="h-8 w-8 rounded-lg bg-white/95 p-1 shadow-xs border border-black/10 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={tenantSettings.logoUrl}
+                    src={tenantSettings?.logoUrl || "/uploads/mcu-logo.png"}
                     alt={displayBrandText}
                     className="max-h-full max-w-full object-contain"
                   />

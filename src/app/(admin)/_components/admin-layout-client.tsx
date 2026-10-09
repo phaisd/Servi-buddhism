@@ -69,7 +69,7 @@ export function AdminLayoutClient({
       brandName={brandName}
       brandTagline={t("app.tagline")}
       brandHref="/dashboard"
-      brandLogoUrl={tenantSettings?.logoUrl}
+      brandLogoUrl={tenantSettings?.logoUrl || "/uploads/mcu-logo.png"}
       breadcrumb={breadcrumb}
       breadcrumbLabel={t("common.breadcrumb")}
       roleLabel={roles[0] ? localizedName(roles[0], locale) : null}

@@ -15,9 +15,19 @@ async function main() {
     console.error("[seed] ปฏิเสธ: NODE_ENV=production — ใช้ npm run db:bootstrap แทน");
     process.exit(1);
   }
-  const core = await seedCore(prisma, { tenantCode: "MCU", nameTh: "คณะพุทธศาสตร์", nameEn: "Faculty of Buddhism" });
+  const core = await seedCore(prisma, {
+    tenantCode: "MCU",
+    nameTh: "คณะพุทธศาสตร์",
+    nameEn: "Faculty of Buddhism",
+    logoUrl: "/uploads/mcu-logo.png",
+  });
   // สร้าง DEMO tenant ไว้ด้วยเพื่อความเข้ากันได้ย้อนหลัง
-  await seedCore(prisma, { tenantCode: "DEMO", nameTh: "คณะพุทธศาสตร์ (Demo)", nameEn: "Faculty of Buddhism (Demo)" });
+  await seedCore(prisma, {
+    tenantCode: "DEMO",
+    nameTh: "คณะพุทธศาสตร์ (Demo)",
+    nameEn: "Faculty of Buddhism (Demo)",
+    logoUrl: "/uploads/mcu-logo.png",
+  });
 
   const hash = await bcrypt.hash(DEV_PASSWORD, 12);
   const users = [

@@ -17,14 +17,16 @@ export function BrandPanel({ tenantSettings: propSettings }: BrandPanelProps) {
   const brandName = settings?.nameTh || t("app.name");
   const brandNameEn = settings?.nameEn;
 
+  const logoUrl = settings?.logoUrl || "/uploads/mcu-logo.png";
+
   return (
     <aside className="brandside">
       <div className="mark">
         <i>
-          {settings?.logoUrl ? (
+          {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={settings.logoUrl}
+              src={logoUrl}
               alt={brandName}
               className="h-full w-full object-contain p-1 rounded-[inherit]"
             />

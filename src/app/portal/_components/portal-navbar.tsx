@@ -100,15 +100,17 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
     return null;
   }
 
+  const logoUrl = tenantSettings?.logoUrl || "/uploads/mcu-logo.png";
+
   return (
     <header className="adm-head sticky top-0 z-40 w-full px-4 sm:px-6">
       {/* Brand Block matching Admin */}
       <Link className="brand-blk !w-auto mr-4 hover:opacity-90 transition-opacity" href="/">
-        <i className={tenantSettings?.logoUrl ? "!bg-background !border !border-border/60 shadow-xs overflow-hidden" : undefined}>
-          {tenantSettings?.logoUrl ? (
+        <i className={logoUrl ? "!bg-background !border !border-border/60 shadow-xs overflow-hidden" : undefined}>
+          {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={tenantSettings.logoUrl}
+              src={logoUrl}
               alt={brandName}
               className="h-full w-full object-contain p-0.5 rounded-[inherit]"
             />

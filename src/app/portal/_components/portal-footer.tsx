@@ -9,7 +9,6 @@ import {
   ExternalLink,
   ShieldCheck,
   Globe,
-  GraduationCap,
 } from "lucide-react";
 
 export async function PortalFooter() {
@@ -51,16 +50,12 @@ export async function PortalFooter() {
         <div>
           <Link href="/" className="brand inline-flex items-center gap-3">
             <i className="overflow-hidden">
-              {settings?.logoUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={settings.logoUrl}
-                  alt={brandName}
-                  className="h-full w-full object-contain p-0.5 rounded-[inherit]"
-                />
-              ) : (
-                <GraduationCap className="h-4 w-4" />
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={settings?.logoUrl || "/uploads/mcu-logo.png"}
+                alt={brandName}
+                className="h-full w-full object-contain p-0.5 rounded-[inherit]"
+              />
             </i>
             <span className="font-bold tracking-tight text-base sm:text-lg">
               {brandName}
