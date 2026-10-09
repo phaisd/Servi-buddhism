@@ -144,7 +144,7 @@ export function PortalHero({ tenantSettings, locale = "th" }: PortalHeroProps) {
       <header className="relative z-30 w-full px-6 sm:px-12 pt-7 flex items-center justify-between text-xs tracking-wider">
         {/* Top-Left: Logo & Brand Symbol */}
         <div className="flex items-center gap-10">
-          <Link href="/portal" className="flex items-center gap-2.5 group">
+          <Link href="/" className="flex items-center gap-2.5 group">
             {headerSettings.showLogo && (
               tenantSettings?.logoUrl ? (
                 <div className="h-8 w-8 rounded-lg bg-white/95 p-1 shadow-xs border border-black/10 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">

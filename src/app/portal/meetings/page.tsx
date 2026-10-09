@@ -27,7 +27,7 @@ export default async function PublicMeetingsPage() {
         </div>
         
         {session ? (
-          <Link href="/portal/meetings/book" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-4 py-2">
+          <Link href="/meetings/book" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-4 py-2">
             {locale === "th" ? "จองห้องประชุม" : "Book a Room"}
           </Link>
         ) : (

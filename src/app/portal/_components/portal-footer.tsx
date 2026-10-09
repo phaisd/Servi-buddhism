@@ -49,7 +49,7 @@ export async function PortalFooter() {
       <div className="foot-in">
         {/* Column 1: Brand & About */}
         <div>
-          <Link href="/portal" className="brand inline-flex items-center gap-3">
+          <Link href="/" className="brand inline-flex items-center gap-3">
             <i className="overflow-hidden">
               {settings?.logoUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -137,7 +137,7 @@ export async function PortalFooter() {
           <h4>{systemsTitle}</h4>
           <ul className="space-y-2 text-sm">
             <li>
-              <Link href="/portal/meetings" className="transition-colors hover:underline">
+              <Link href="/meetings" className="transition-colors hover:underline">
                 {locale === "th" ? "ระบบจองห้องประชุมออนไลน์" : "Online Room Booking"}
               </Link>
             </li>

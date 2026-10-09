@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 export default async function BookMeetingPage() {
   const session = await getSessionContext();
   if (!session) {
-    redirect("/portal/meetings");
+    redirect("/meetings");
   }
   const locale = await getLocale();
 

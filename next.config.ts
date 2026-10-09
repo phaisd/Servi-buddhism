@@ -15,6 +15,17 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
+  async rewrites() {
+    return [
+      { source: "/", destination: "/portal" },
+      { source: "/meetings", destination: "/portal/meetings" },
+      { source: "/meetings/book", destination: "/portal/meetings/book" },
+      { source: "/programs", destination: "/portal/programs" },
+      { source: "/programs/:path*", destination: "/portal/programs/:path*" },
+      { source: "/documents", destination: "/portal/documents" },
+      { source: "/documents/:path*", destination: "/portal/documents/:path*" },
+    ];
+  },
 };
 
 export default nextConfig;

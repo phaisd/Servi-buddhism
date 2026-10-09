@@ -82,28 +82,28 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
   ];
 
   const serviceItems = [
-    { label: "หลักสูตรการศึกษา", href: "/portal/programs" },
+    { label: "หลักสูตรการศึกษา", href: "/programs" },
     { label: "ทำเนียบบุคลากร", href: "/portal/personnel" },
-    { label: "เอกสารดาวน์โหลด", href: "/portal/documents" },
-    { label: "จองห้องประชุม", href: "/portal/meetings" },
+    { label: "เอกสารดาวน์โหลด", href: "/documents" },
+    { label: "จองห้องประชุม", href: "/meetings" },
     { label: "ขอหนังสือรับรอง", href: "/portal/certificates" },
     { label: "กิจกรรมนิสิต", href: "/portal/events" },
   ];
 
-  const isAnyServiceActive = serviceItems.some((s) => pathname.startsWith(s.href));
+  const isAnyServiceActive = serviceItems.some((s) => pathname.startsWith(s.href) || pathname.startsWith(`/portal${s.href}`));
   const initials = (user?.name ?? "?").trim().charAt(0).toUpperCase() || "?";
   const ctx = { roles, permissions, isSuperAdmin };
   const canManageSettings = hasPermission(ctx, P.settingsManage);
 
   // If on the portal homepage, hide the top navbar so the EMBER.dsgn hero has full-screen impact with its own integrated header
-  if (pathname === "/portal") {
+  if (pathname === "/portal" || pathname === "/") {
     return null;
   }
 
   return (
     <header className="adm-head sticky top-0 z-40 w-full px-4 sm:px-6">
       {/* Brand Block matching Admin */}
-      <Link className="brand-blk !w-auto mr-4 hover:opacity-90 transition-opacity" href="/portal">
+      <Link className="brand-blk !w-auto mr-4 hover:opacity-90 transition-opacity" href="/">
         <i className={tenantSettings?.logoUrl ? "!bg-background !border !border-border/60 shadow-xs overflow-hidden" : undefined}>
           {tenantSettings?.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
