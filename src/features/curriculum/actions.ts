@@ -1,33 +1,97 @@
 "use server";
 
 import { requireSession, requirePermission } from "@/features/identity/server";
+import { revalidatePath } from "next/cache";
 import { CURRICULUM_P } from "./permissions";
 import {
   createCurriculum,
   updateCurriculum,
   deleteCurriculum,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment,
 } from "./_internal/services";
 import {
   curriculumSchema,
   updateCurriculumSchema,
+  departmentSchema,
+  updateDepartmentSchema,
 } from "./_internal/validations";
+
+// ── Curriculum Actions ──
 
 export async function createCurriculumAction(data: unknown) {
   const session = await requireSession();
   await requirePermission(CURRICULUM_P.manage);
   const parsed = curriculumSchema.parse(data);
-  return createCurriculum(session.tenantId, session.userId, parsed);
+  const res = await createCurriculum(session.tenantId, session.userId, parsed);
+  revalidatePath("/curriculum");
+  revalidatePath("/curriculum/departments");
+  revalidatePath("/portal/programs");
+  return res;
 }
 
 export async function updateCurriculumAction(id: string, data: unknown) {
   const session = await requireSession();
   await requirePermission(CURRICULUM_P.manage);
   const parsed = updateCurriculumSchema.parse(data);
-  return updateCurriculum(session.tenantId, session.userId, id, parsed);
+  const res = await updateCurriculum(session.tenantId, session.userId, id, parsed);
+  revalidatePath("/curriculum");
+  revalidatePath("/curriculum/departments");
+  revalidatePath("/portal/programs");
+  return res;
 }
 
 export async function deleteCurriculumAction(id: string) {
   const session = await requireSession();
   await requirePermission(CURRICULUM_P.manage);
-  return deleteCurriculum(session.tenantId, session.userId, id);
+  const res = await deleteCurriculum(session.tenantId, session.userId, id);
+  revalidatePath("/curriculum");
+  revalidatePath("/curriculum/departments");
+  revalidatePath("/portal/programs");
+  return res;
+}
+
+export async function toggleCurriculumActiveAction(id: string, isActive: boolean) {
+  const session = await requireSession();
+  await requirePermission(CURRICULUM_P.manage);
+  const res = await updateCurriculum(session.tenantId, session.userId, id, { isActive });
+  revalidatePath("/curriculum");
+  revalidatePath("/curriculum/departments");
+  revalidatePath("/portal/programs");
+  return res;
+}
+
+// ── Department / Program / Division Actions ──
+
+export async function createDepartmentAction(data: unknown) {
+  const session = await requireSession();
+  await requirePermission(CURRICULUM_P.manage);
+  const parsed = departmentSchema.parse(data);
+  const res = await createDepartment(session.tenantId, session.userId, parsed);
+  revalidatePath("/curriculum");
+  revalidatePath("/curriculum/departments");
+  revalidatePath("/portal/programs");
+  return res;
+}
+
+export async function updateDepartmentAction(id: string, data: unknown) {
+  const session = await requireSession();
+  await requirePermission(CURRICULUM_P.manage);
+  const parsed = updateDepartmentSchema.parse(data);
+  const res = await updateDepartment(session.tenantId, session.userId, id, parsed);
+  revalidatePath("/curriculum");
+  revalidatePath("/curriculum/departments");
+  revalidatePath("/portal/programs");
+  return res;
+}
+
+export async function deleteDepartmentAction(id: string) {
+  const session = await requireSession();
+  await requirePermission(CURRICULUM_P.manage);
+  const res = await deleteDepartment(session.tenantId, session.userId, id);
+  revalidatePath("/curriculum");
+  revalidatePath("/curriculum/departments");
+  revalidatePath("/portal/programs");
+  return res;
 }

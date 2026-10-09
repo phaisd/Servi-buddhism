@@ -375,15 +375,20 @@ model Department {
   id       String @id @default(uuid()) @db.Uuid
   tenantId String @map("tenant_id") @db.Uuid
 
-  nameTh     String  @map("name_th") @db.VarChar(255)
-  nameEn     String? @map("name_en") @db.VarChar(255)
-  orderIndex Int     @default(0) @map("order_index")
+  nameTh        String  @map("name_th") @db.VarChar(255)
+  nameEn        String? @map("name_en") @db.VarChar(255)
+  code          String? @db.VarChar(50)
+  type          String? @default("DEPARTMENT") @db.VarChar(50)
+  descriptionTh String? @map("description_th") @db.Text
+  descriptionEn String? @map("description_en") @db.Text
+  orderIndex    Int     @default(0) @map("order_index")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  personnel Personnel[]
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  personnel   Personnel[]
+  curriculums Curriculum[]
 
   @@index([tenantId])
   @@map("departments")
@@ -433,8 +438,9 @@ enum DegreeLevel {
 }
 
 model Curriculum {
-  id       String @id @default(uuid()) @db.Uuid
-  tenantId String @map("tenant_id") @db.Uuid
+  id           String  @id @default(uuid()) @db.Uuid
+  tenantId     String  @map("tenant_id") @db.Uuid
+  departmentId String? @map("department_id") @db.Uuid
 
   nameTh String  @map("name_th") @db.VarChar(255)
   nameEn String? @map("name_en") @db.VarChar(255)
@@ -452,9 +458,11 @@ model Curriculum {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, degree])
+  @@index([departmentId])
   @@map("curriculums")
 }
 

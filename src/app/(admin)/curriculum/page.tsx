@@ -1,11 +1,14 @@
 import { requirePermission } from "@/features/identity/server";
 import { CURRICULUM_P } from "@/features/curriculum";
-import { getCurriculums } from "@/features/curriculum/server";
+import { getCurriculums, getDepartments } from "@/features/curriculum/server";
 import { CurriculumAdminClient } from "./_components/curriculum-admin-client";
 
 export default async function CurriculumAdminPage() {
   const ctx = await requirePermission(CURRICULUM_P.read);
-  const items = await getCurriculums(ctx.tenantId);
+  const [items, departments] = await Promise.all([
+    getCurriculums(ctx.tenantId),
+    getDepartments(ctx.tenantId),
+  ]);
 
-  return <CurriculumAdminClient initialItems={items} />;
+  return <CurriculumAdminClient initialItems={items} departments={departments} />;
 }
