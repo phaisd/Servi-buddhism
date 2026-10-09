@@ -42,6 +42,7 @@ export default async function PublicMeetingsPage() {
           <div key={room.id} className="flex flex-col overflow-hidden rounded-2xl border bg-card hover:shadow-md transition-all">
             {room.imageUrl && (
               <div className="aspect-video w-full overflow-hidden bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={room.imageUrl} alt={room.name} className="h-full w-full object-cover" />
               </div>
             )}
