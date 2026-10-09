@@ -11,8 +11,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeThisPasswordInProd2026!}
       POSTGRES_DB: ${POSTGRES_DB:-vibe_production}
     ports:
-      # Bind only to host loopback for secure administrative access
-      - "127.0.0.1:5432:5432"
+      # Bind to host loopback port 5433 to avoid collision with host PostgreSQL on 5432
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
