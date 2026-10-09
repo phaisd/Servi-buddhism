@@ -54,7 +54,7 @@ export function UserDialog({
             <input id="user-name" value={form.name} placeholder={t("users.namePh")} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required disabled={isSelf} />
           </LiyonField>
           <LiyonField label={t("users.email")} htmlFor="user-email">
-            <input id="user-email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required disabled={mode === "edit"} />
+            <input id="user-email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required disabled={isSelf} />
           </LiyonField>
           <LiyonField label={t("users.roles")} hint={isSelf ? t("users.cannotEditSelf") : t("users.rolesHint")}>
             <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto p-3 rounded-lg border border-[var(--glass-border)] bg-[var(--panel)]/40 scrollbar-thin">

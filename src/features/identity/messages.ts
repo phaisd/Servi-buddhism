@@ -102,7 +102,7 @@ export const MESSAGES: Dictionary = {
   "users.selectRow": { th: "เลือก {name}", en: "Select {name}" },
   "users.rowMenu": { th: "เมนูของ {name}", en: "Menu for {name}" },
   "users.emailTitle": { th: "เปลี่ยนอีเมล", en: "Change email" },
-  "users.emailDesc": { th: "ระบบจะส่งลิงก์ยืนยันไปยังอีเมลใหม่ อีเมลจะเปลี่ยนเมื่อผู้ใช้กดยืนยัน", en: "A verification link is sent to the new address. It changes once the user confirms." },
+  "users.emailDesc": { th: "ระบุที่อยู่อีเมลใหม่สำหรับผู้ใช้นี้ ระบบจะอัปเดตอีเมลทันที", en: "Enter a new email address for this user. The email will be updated immediately." },
   "users.newEmail": { th: "อีเมลใหม่", en: "New email" },
   "users.emailLinkTitle": { th: "ลิงก์ยืนยันอีเมล", en: "Verification link" },
   "users.emailLinkDesc": { th: "ส่งลิงก์นี้ให้ผู้ใช้ถ้าอีเมลไม่ถึง ลิงก์หมดอายุใน {hours} ชั่วโมง", en: "Share this link if the email doesn't arrive. Expires in {hours} hours." },

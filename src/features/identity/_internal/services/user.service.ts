@@ -123,12 +123,17 @@ export async function createUser(input: Actor & { email: string; name: string; r
   return { user, rawToken, expiresAt, mailDelivered: delivered };
 }
 
-export async function updateUser(input: Actor & { userId: string; name?: string; roles?: RoleAssignment[]; mustChangePassword?: boolean }) {
-  if (input.userId === input.actorId && (input.roles !== undefined || input.mustChangePassword !== undefined)) throw errors.forbidden("cannot_edit_self");
+export async function updateUser(input: Actor & { userId: string; name?: string; email?: string; roles?: RoleAssignment[]; mustChangePassword?: boolean }) {
+  if (input.userId === input.actorId && (input.roles !== undefined || input.mustChangePassword !== undefined || input.email !== undefined)) throw errors.forbidden("cannot_edit_self");
+  const newEmail = input.email ? input.email.trim().toLowerCase() : undefined;
   await prisma.$transaction(async (tx) => {
     const ut = await membership(input.userId, input.tenantId, tx);
     assertCanActOnTarget(ut.userRoles, input);
-    const before = { name: ut.user.name, roles: ut.userRoles.map((r) => ({ roleId: r.roleId, scopeType: r.scopeType, scopeId: r.scopeId })), mustChangePassword: ut.user.mustChangePassword };
+    if (newEmail && newEmail !== ut.user.email) {
+      const existing = await tx.user.findUnique({ where: { email: newEmail } });
+      if (existing && existing.id !== input.userId) throw errors.conflict("email_taken");
+    }
+    const before = { name: ut.user.name, email: ut.user.email, roles: ut.userRoles.map((r) => ({ roleId: r.roleId, scopeType: r.scopeType, scopeId: r.scopeId })), mustChangePassword: ut.user.mustChangePassword };
     if (input.roles) {
       await assertRolesInTenant(input.roles, input.tenantId, tx);
       await assertCanAssignRoles(input.roles, input, tx);
@@ -139,10 +144,17 @@ export async function updateUser(input: Actor & { userId: string; name?: string;
       await tx.userRole.deleteMany({ where: { userTenantId: ut.id } });
       await tx.userRole.createMany({ data: input.roles.map((r) => ({ userTenantId: ut.id, ...r })) });
     }
-    if (input.name !== undefined || input.mustChangePassword !== undefined) {
-      await tx.user.update({ where: { id: input.userId }, data: { name: input.name, mustChangePassword: input.mustChangePassword } });
+    if (input.name !== undefined || input.mustChangePassword !== undefined || newEmail !== undefined) {
+      await tx.user.update({
+        where: { id: input.userId },
+        data: {
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.mustChangePassword !== undefined ? { mustChangePassword: input.mustChangePassword } : {}),
+          ...(newEmail !== undefined ? { email: newEmail } : {}),
+        },
+      });
     }
-    await writeAudit({ tenantId: input.tenantId, actorId: input.actorId, action: "user.update", entity: "user", entityId: input.userId, before, after: { name: input.name, roles: input.roles, mustChangePassword: input.mustChangePassword } }, tx);
+    await writeAudit({ tenantId: input.tenantId, actorId: input.actorId, action: "user.update", entity: "user", entityId: input.userId, before, after: { name: input.name, email: newEmail, roles: input.roles, mustChangePassword: input.mustChangePassword } }, tx);
   });
 }
 

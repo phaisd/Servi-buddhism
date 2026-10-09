@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { ShieldPlus, Pencil, Trash2, AlertCircle, KeyRound } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ShieldPlus, Pencil, Trash2, AlertCircle, KeyRound, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DataTable, RowMenuItem, StatusPill, type DataTableColumn } from "@/shared/components/liyon";
@@ -8,12 +10,14 @@ import { useT, useLocale } from "@/shared/lib/i18n/client";
 import { localizedName } from "@/shared/lib/format";
 import { listRolesAction, listPermissionsAction, createRoleAction, updateRoleAction, deleteRoleAction } from "@/features/identity/actions";
 import type { RoleItem } from "@/features/identity";
+import { UsersNav } from "../../_components/users-nav";
 import { RoleDialog, emptyRoleForm, type RoleForm, type PermissionPick } from "./role-dialog";
 import { DeleteRoleDialog } from "./delete-role-dialog";
 
 export function RolesClient() {
   const t = useT();
   const locale = useLocale();
+  const router = useRouter();
   const [roles, setRoles] = useState<RoleItem[]>([]);
   const [permissions, setPermissions] = useState<PermissionPick[]>([]);
   const [state, setState] = useState<"loading" | "data" | "empty" | "error">("loading");
@@ -88,7 +92,20 @@ export function RolesClient() {
         </div>
       ),
     },
-    { key: "members", header: t("roles.colMembers"), render: (r) => r.memberCount },
+    {
+      key: "members",
+      header: t("roles.colMembers"),
+      render: (r) => (
+        <Link
+          href={`/users?roleId=${r.id}`}
+          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          title={locale === "th" ? "ดูสมาชิกและแก้ไขผู้ใช้งาน" : "View members & edit users"}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>{r.memberCount} {locale === "th" ? "คน" : ""}</span>
+        </Link>
+      ),
+    },
     {
       key: "perms",
       header: t("roles.colPerms"),
@@ -98,6 +115,7 @@ export function RolesClient() {
 
   return (
     <>
+      <UsersNav />
       <header className="ph hr">
         <h1 className="sr-only">{t("roles.title")}</h1>
         <div className="acts ml-auto">
@@ -117,6 +135,12 @@ export function RolesClient() {
         getRowId={(r) => r.id}
         renderRowMenu={(r) => (
           <>
+            <RowMenuItem
+              icon={<Users aria-hidden="true" />}
+              onSelect={() => router.push(`/users?roleId=${r.id}`)}
+            >
+              {locale === "th" ? "ดูสมาชิกและแก้ไขผู้ใช้งาน" : "View members & edit users"}
+            </RowMenuItem>
             <RowMenuItem
               icon={<Pencil aria-hidden="true" />}
               disabled={r.isSystem}

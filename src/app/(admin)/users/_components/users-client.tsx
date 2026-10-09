@@ -4,17 +4,18 @@ import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/shared/lib/i18n/client";
-import { listUsersAction, listRolesForPickerAction, createUserAction, updateUserAction, setUserActiveAction, issuePasswordLinkAction, requestEmailChangeAction } from "@/features/identity/actions";
+import { listUsersAction, listRolesForPickerAction, createUserAction, updateUserAction, setUserActiveAction, issuePasswordLinkAction } from "@/features/identity/actions";
 import { UsersTableCard } from "./users-table-card";
 import { UserDialog } from "./user-dialog";
 import { LinkDialog } from "./link-dialog";
 import { ChangeEmailDialog } from "./change-email-dialog";
 import { SuspendDialog } from "./suspend-dialog";
 import { emptyForm, type UserForm, type UserListItem, type RolePick } from "./types";
+import { UsersNav } from "./users-nav";
 
 const PER_PAGE = 20;
 
-export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId: string }) {
+export function UsersClient({ canManage, selfId, initialRoleId }: { canManage: boolean; selfId: string; initialRoleId?: string }) {
   const t = useT();
   const [users, setUsers] = useState<UserListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -23,7 +24,7 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
-  const [roleId, setRoleId] = useState("");
+  const [roleId, setRoleId] = useState(initialRoleId ?? "");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, start] = useTransition();
@@ -72,7 +73,13 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
   }
   function submitEdit(user: UserListItem) {
     start(async () => {
-      const r = await updateUserAction({ userId: user.id, name: form.name, roles: form.roleIds.map((id) => ({ roleId: id, scopeType: "ALL", scopeId: null })), mustChangePassword: form.mustChangePassword });
+      const r = await updateUserAction({
+        userId: user.id,
+        name: form.name,
+        email: form.email,
+        roles: form.roleIds.map((id) => ({ roleId: id, scopeType: "ALL", scopeId: null })),
+        mustChangePassword: form.mustChangePassword,
+      });
       if (!r.ok) return fail(r.error, t("users.editFail"));
       toast.success(t("users.editOk")); setDialog(null); void load();
     });
@@ -105,14 +112,17 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
   }
   function submitEmail(user: UserListItem, newEmail: string) {
     start(async () => {
-      const r = await requestEmailChangeAction({ userId: user.id, newEmail });
+      const r = await updateUserAction({ userId: user.id, email: newEmail });
       if (!r.ok) return fail(r.error, t("common.error"));
-      setDialog({ kind: "link", link: r.data.link, hours: r.data.hours, title: t("users.emailLinkTitle"), desc: t("users.emailLinkDesc", { hours: r.data.hours }), mailDelivered: r.data.mailDelivered });
+      toast.success(t("users.editOk"));
+      setDialog(null);
+      void load();
     });
   }
 
   return (
     <>
+      <UsersNav />
       <header className="ph hr">
         <h1 className="sr-only">{t("users.title")}</h1>
         {canManage && <div className="acts ml-auto"><Button type="button" onClick={() => { setForm(emptyForm()); setDialog({ kind: "create" }); }}><UserPlus aria-hidden="true" />{t("users.addBtn")}</Button></div>}
