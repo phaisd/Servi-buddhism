@@ -18,12 +18,14 @@ export type {
   ServiceItem,
   NewsSectionSettings,
   FacultyBannerSettings,
+  FooterSettings,
 } from "./_internal/validations/settings";
 export {
   DEFAULT_HERO_SETTINGS,
   DEFAULT_SERVICES_SECTION_SETTINGS,
   DEFAULT_NEWS_SECTION_SETTINGS,
   DEFAULT_FACULTY_BANNER_SETTINGS,
+  DEFAULT_FOOTER_SETTINGS,
 } from "./_internal/validations/settings";
 
 

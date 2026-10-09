@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { resolveTenantSettings } from "@/features/identity/server";
+import { DEFAULT_FOOTER_SETTINGS } from "@/features/identity";
 import { getLocale } from "@/shared/lib/i18n/server";
 import {
   Phone,
@@ -17,6 +18,12 @@ export async function PortalFooter() {
     getLocale(),
   ]);
 
+  const footer = settings?.footer ?? DEFAULT_FOOTER_SETTINGS;
+
+  if (footer.enabled === false) {
+    return null;
+  }
+
   const brandName =
     locale === "th"
       ? settings?.nameTh || "คณะพุทธศาสตร์"
@@ -24,10 +31,17 @@ export async function PortalFooter() {
 
   const brandTagline =
     locale === "th"
-      ? "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย (มจร)"
-      : "Mahachulalongkornrajavidyalaya University (MCU)";
+      ? footer.subTaglineTh || "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย (มจร)"
+      : footer.subTaglineEn || "Mahachulalongkornrajavidyalaya University (MCU)";
 
   const currentYear = new Date().getFullYear();
+
+  const desc = locale === "th" ? footer.descTh : footer.descEn;
+  const address = locale === "th" ? footer.addressTh : footer.addressEn;
+  const copyright = locale === "th" ? footer.copyrightTh : footer.copyrightEn;
+  const quickLinksTitle = locale === "th" ? footer.quickLinksTitleTh : footer.quickLinksTitleEn;
+  const systemsTitle = locale === "th" ? footer.systemsTitleTh : footer.systemsTitleEn;
+  const mainWebsiteText = locale === "th" ? footer.mainWebsiteTextTh : footer.mainWebsiteTextEn;
 
   return (
     <footer className="mt-16 w-full border-t border-white/10">
@@ -53,35 +67,37 @@ export async function PortalFooter() {
             </span>
           </Link>
 
-          <p className="foot-tag text-sm leading-relaxed">
-            {locale === "th"
-              ? "ศูนย์กลางการศึกษาพระพุทธศาสนาระดับอุดมศึกษา มุ่งผลิตบัณฑิตให้มีปฏิปทาน่าเลื่อมใส ใฝ่รู้ใฝ่คิด มีความเป็นผู้นำทางจิตใจและปัญญา บูรณาการพุทธธรรมกับศาสตร์สมัยใหม่ เพื่อประโยชน์สุขของสังคม"
-              : "Center of Buddhist Higher Education, integrating Dhamma principles with modern sciences to cultivate ethical leadership and global wisdom."}
-          </p>
+          {desc && (
+            <p className="foot-tag text-sm leading-relaxed">
+              {desc}
+            </p>
+          )}
 
           <div className="mt-5 space-y-2 text-xs">
-            <div className="flex items-start gap-2.5">
-              <MapPin className="h-4 w-4 shrink-0 opacity-70 mt-0.5" />
-              <span>
-                {locale === "th"
-                  ? "79 หมู่ 1 ถนนพหลโยธิน กม. 55 ต.ลำไทร อ.วังน้อย จ.พระนครศรีอยุธยา 13170"
-                  : "79 Moo 1, Phahonyothin Rd., Lamsai, Wang Noi, Phra Nakhon Si Ayutthaya 13170, Thailand"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <Phone className="h-4 w-4 shrink-0 opacity-70" />
-              <span>035-248-000 ต่อ 8100-8104</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <Mail className="h-4 w-4 shrink-0 opacity-70" />
-              <span>buddhist@mcu.ac.th</span>
-            </div>
+            {address && (
+              <div className="flex items-start gap-2.5">
+                <MapPin className="h-4 w-4 shrink-0 opacity-70 mt-0.5" />
+                <span>{address}</span>
+              </div>
+            )}
+            {footer.phone && (
+              <div className="flex items-center gap-2.5">
+                <Phone className="h-4 w-4 shrink-0 opacity-70" />
+                <span>{footer.phone}</span>
+              </div>
+            )}
+            {footer.email && (
+              <div className="flex items-center gap-2.5">
+                <Mail className="h-4 w-4 shrink-0 opacity-70" />
+                <span>{footer.email}</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Column 2: Quick Links / เมนูลัด */}
         <div>
-          <h4>{locale === "th" ? "เมนูลัด & บริการนิสิต" : "QUICK LINKS & SERVICES"}</h4>
+          <h4>{quickLinksTitle}</h4>
           <ul className="space-y-2 text-sm">
             <li>
               <Link href="/portal/news" className="transition-colors hover:underline">
@@ -118,7 +134,7 @@ export async function PortalFooter() {
 
         {/* Column 3: ระบบบริการ & ระบบจัดการ */}
         <div>
-          <h4>{locale === "th" ? "ระบบสารสนเทศองค์กร" : "INFORMATION SYSTEMS"}</h4>
+          <h4>{systemsTitle}</h4>
           <ul className="space-y-2 text-sm">
             <li>
               <Link href="/portal/meetings" className="transition-colors hover:underline">
@@ -130,27 +146,31 @@ export async function PortalFooter() {
                 {locale === "th" ? "ระบบเช็คชื่อและประเมินผล" : "Attendance & Evaluation"}
               </Link>
             </li>
-            <li>
-              <a
-                href="https://www.mcu.ac.th"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 transition-colors hover:underline"
-              >
-                <Globe className="h-3.5 w-3.5 opacity-80" />
-                <span>{locale === "th" ? "เว็บไซต์หลัก มหาวิทยาลัย มจร" : "MCU Main Website"}</span>
-                <ExternalLink className="h-3 w-3 opacity-60" />
-              </a>
-            </li>
-            <li className="pt-2">
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-white/10 hover:bg-white/15 text-xs font-medium transition-colors"
-              >
-                <ShieldCheck className="h-3.5 w-3.5" />
-                <span>{locale === "th" ? "ระบบบริหารจัดการ (Staff Console)" : "Staff Console (Admin)"}</span>
-              </Link>
-            </li>
+            {footer.mainWebsiteUrl && (
+              <li>
+                <a
+                  href={footer.mainWebsiteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 transition-colors hover:underline"
+                >
+                  <Globe className="h-3.5 w-3.5 opacity-80" />
+                  <span>{mainWebsiteText}</span>
+                  <ExternalLink className="h-3 w-3 opacity-60" />
+                </a>
+              </li>
+            )}
+            {footer.showStaffConsole && (
+              <li className="pt-2">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-white/10 hover:bg-white/15 text-xs font-medium transition-colors"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>{locale === "th" ? "ระบบบริหารจัดการ (Staff Console)" : "Staff Console (Admin)"}</span>
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
       </div>
@@ -159,7 +179,7 @@ export async function PortalFooter() {
       <div className="foot-bottom">
         <div className="foot-bottom-in">
           <div>
-            © {currentYear} {brandName} · {brandTagline}. {locale === "th" ? "สงวนลิขสิทธิ์ทั้งหมด" : "All rights reserved."}
+            © {currentYear} {brandName} · {brandTagline}. {copyright}
           </div>
           <div className="flex items-center gap-4 text-xs">
             <Link href="/portal/news" className="hover:underline">
@@ -169,10 +189,14 @@ export async function PortalFooter() {
             <Link href="/portal/documents" className="hover:underline">
               {locale === "th" ? "เอกสารเผยแพร่" : "Documents"}
             </Link>
-            <span>·</span>
-            <Link href="/login" className="hover:underline">
-              {locale === "th" ? "สำหรับเจ้าหน้าที่" : "Staff Login"}
-            </Link>
+            {footer.showStaffConsole && (
+              <>
+                <span>·</span>
+                <Link href="/login" className="hover:underline">
+                  {locale === "th" ? "สำหรับเจ้าหน้าที่" : "Staff Login"}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

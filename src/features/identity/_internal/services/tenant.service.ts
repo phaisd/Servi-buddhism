@@ -9,6 +9,7 @@ import {
   DEFAULT_SERVICES_SECTION_SETTINGS,
   DEFAULT_NEWS_SECTION_SETTINGS,
   DEFAULT_FACULTY_BANNER_SETTINGS,
+  DEFAULT_FOOTER_SETTINGS,
   type TenantSettings,
   type HeroSettings,
   type HeroNavLink,
@@ -17,6 +18,7 @@ import {
   type ServiceItem,
   type NewsSectionSettings,
   type FacultyBannerSettings,
+  type FooterSettings,
 } from "../validations/settings";
 
 export type {
@@ -28,12 +30,14 @@ export type {
   ServiceItem,
   NewsSectionSettings,
   FacultyBannerSettings,
+  FooterSettings,
 };
 export {
   DEFAULT_HERO_SETTINGS,
   DEFAULT_SERVICES_SECTION_SETTINGS,
   DEFAULT_NEWS_SECTION_SETTINGS,
   DEFAULT_FACULTY_BANNER_SETTINGS,
+  DEFAULT_FOOTER_SETTINGS,
 };
 
 async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSettings> {
@@ -45,6 +49,7 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     servicesSection?: unknown;
     newsSection?: unknown;
     facultyBanner?: unknown;
+    footer?: unknown;
   }) ?? {};
   const p = settingsObj.palette;
   const rawHero = (settingsObj.hero as Partial<HeroSettings>) ?? {};
@@ -88,6 +93,12 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     ...rawFaculty,
   };
 
+  const rawFooter = (settingsObj.footer as Partial<FooterSettings>) ?? {};
+  const footer: FooterSettings = {
+    ...DEFAULT_FOOTER_SETTINGS,
+    ...rawFooter,
+  };
+
   return {
     code: t.code,
     nameTh: t.nameTh,
@@ -98,6 +109,7 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     servicesSection,
     newsSection,
     facultyBanner,
+    footer,
   };
 }
 
@@ -105,7 +117,7 @@ export async function getTenantSettings(tenantId: string): Promise<TenantSetting
   return readTenantSettings(tenantId, prisma);
 }
 
-/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette, hero, servicesSection, newsSection, facultyBanner ไม่ทับทั้งก้อน */
+/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette, hero, servicesSection, newsSection, facultyBanner, footer ไม่ทับทั้งก้อน */
 export async function updateTenantSettings(input: { tenantId: string; actorId: string } & UpdateSettingsInput): Promise<void> {
   await prisma.$transaction(async (tx) => {
     // อ่านผ่าน tx เดียวกัน ไม่ใช่ client กลาง
@@ -119,6 +131,7 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
       ...(input.servicesSection ? { servicesSection: input.servicesSection } : {}),
       ...(input.newsSection ? { newsSection: input.newsSection } : {}),
       ...(input.facultyBanner ? { facultyBanner: input.facultyBanner } : {}),
+      ...(input.footer ? { footer: input.footer } : {}),
     };
     await tx.tenant.update({
       where: { id: input.tenantId },

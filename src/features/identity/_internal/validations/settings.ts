@@ -185,6 +185,36 @@ export const facultyBannerSchema = z.object({
   circle3Text: z.string().default("ปัญญา"),
 });
 
+export const footerSchema = z.object({
+  enabled: z.boolean().default(true),
+  descTh: z.string().default(
+    "ศูนย์กลางการศึกษาพระพุทธศาสนาระดับอุดมศึกษา มุ่งผลิตบัณฑิตให้มีปฏิปทาน่าเลื่อมใส ใฝ่รู้ใฝ่คิด มีความเป็นผู้นำทางจิตใจและปัญญา บูรณาการพุทธธรรมกับศาสตร์สมัยใหม่ เพื่อประโยชน์สุขของสังคม"
+  ),
+  descEn: z.string().default(
+    "Center of Buddhist Higher Education, integrating Dhamma principles with modern sciences to cultivate ethical leadership and global wisdom."
+  ),
+  addressTh: z.string().default(
+    "79 หมู่ 1 ถนนพหลโยธิน กม. 55 ต.ลำไทร อ.วังน้อย จ.พระนครศรีอยุธยา 13170"
+  ),
+  addressEn: z.string().default(
+    "79 Moo 1, Phahonyothin Rd., Lamsai, Wang Noi, Phra Nakhon Si Ayutthaya 13170, Thailand"
+  ),
+  phone: z.string().default("035-248-000 ต่อ 8100-8104"),
+  email: z.string().default("buddhist@mcu.ac.th"),
+  subTaglineTh: z.string().default("มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย (มจร)"),
+  subTaglineEn: z.string().default("Mahachulalongkornrajavidyalaya University (MCU)"),
+  copyrightTh: z.string().default("สงวนลิขสิทธิ์ทั้งหมด"),
+  copyrightEn: z.string().default("All rights reserved."),
+  quickLinksTitleTh: z.string().default("เมนูลัด & บริการนิสิต"),
+  quickLinksTitleEn: z.string().default("QUICK LINKS & SERVICES"),
+  systemsTitleTh: z.string().default("ระบบสารสนเทศองค์กร"),
+  systemsTitleEn: z.string().default("INFORMATION SYSTEMS"),
+  mainWebsiteUrl: z.string().default("https://www.mcu.ac.th"),
+  mainWebsiteTextTh: z.string().default("เว็บไซต์หลัก มหาวิทยาลัย มจร"),
+  mainWebsiteTextEn: z.string().default("MCU Main Website"),
+  showStaffConsole: z.boolean().default(true),
+});
+
 export const updateSettingsSchema = z.object({
   nameTh: z.string().trim().min(1).max(255),
   nameEn: z.string().trim().min(1).max(255),
@@ -202,6 +232,7 @@ export const updateSettingsSchema = z.object({
   servicesSection: servicesSectionSchema.optional(),
   newsSection: newsSectionSchema.optional(),
   facultyBanner: facultyBannerSchema.optional(),
+  footer: footerSchema.optional(),
 });
 export const updateProfileSchema = z.object({ name: z.string().trim().min(1).max(255), locale: z.enum(["th", "en"]) });
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -388,6 +419,34 @@ export const DEFAULT_FACULTY_BANNER_SETTINGS: FacultyBannerSettings = {
   circle3Text: "ปัญญา",
 };
 
+export type FooterSettingsInput = z.infer<typeof footerSchema>;
+export type FooterSettings = FooterSettingsInput;
+
+export const DEFAULT_FOOTER_SETTINGS: FooterSettings = {
+  enabled: true,
+  descTh:
+    "ศูนย์กลางการศึกษาพระพุทธศาสนาระดับอุดมศึกษา มุ่งผลิตบัณฑิตให้มีปฏิปทาน่าเลื่อมใส ใฝ่รู้ใฝ่คิด มีความเป็นผู้นำทางจิตใจและปัญญา บูรณาการพุทธธรรมกับศาสตร์สมัยใหม่ เพื่อประโยชน์สุขของสังคม",
+  descEn:
+    "Center of Buddhist Higher Education, integrating Dhamma principles with modern sciences to cultivate ethical leadership and global wisdom.",
+  addressTh: "79 หมู่ 1 ถนนพหลโยธิน กม. 55 ต.ลำไทร อ.วังน้อย จ.พระนครศรีอยุธยา 13170",
+  addressEn:
+    "79 Moo 1, Phahonyothin Rd., Lamsai, Wang Noi, Phra Nakhon Si Ayutthaya 13170, Thailand",
+  phone: "035-248-000 ต่อ 8100-8104",
+  email: "buddhist@mcu.ac.th",
+  subTaglineTh: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย (มจร)",
+  subTaglineEn: "Mahachulalongkornrajavidyalaya University (MCU)",
+  copyrightTh: "สงวนลิขสิทธิ์ทั้งหมด",
+  copyrightEn: "All rights reserved.",
+  quickLinksTitleTh: "เมนูลัด & บริการนิสิต",
+  quickLinksTitleEn: "QUICK LINKS & SERVICES",
+  systemsTitleTh: "ระบบสารสนเทศองค์กร",
+  systemsTitleEn: "INFORMATION SYSTEMS",
+  mainWebsiteUrl: "https://www.mcu.ac.th",
+  mainWebsiteTextTh: "เว็บไซต์หลัก มหาวิทยาลัย มจร",
+  mainWebsiteTextEn: "MCU Main Website",
+  showStaffConsole: true,
+};
+
 export interface TenantSettings {
   code: string;
   nameTh: string;
@@ -398,6 +457,8 @@ export interface TenantSettings {
   servicesSection: ServicesSectionSettings;
   newsSection: NewsSectionSettings;
   facultyBanner: FacultyBannerSettings;
+  footer: FooterSettings;
 }
+
 
 
