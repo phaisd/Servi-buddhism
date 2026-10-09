@@ -19,6 +19,7 @@ export type {
   NewsSectionSettings,
   FacultyBannerSettings,
   FooterSettings,
+  SmtpSettings,
 } from "./_internal/validations/settings";
 export {
   DEFAULT_HERO_SETTINGS,
@@ -26,6 +27,8 @@ export {
   DEFAULT_NEWS_SECTION_SETTINGS,
   DEFAULT_FACULTY_BANNER_SETTINGS,
   DEFAULT_FOOTER_SETTINGS,
+  DEFAULT_SMTP_SETTINGS,
+  smtpSettingsSchema,
 } from "./_internal/validations/settings";
 
 

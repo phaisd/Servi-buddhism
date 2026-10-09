@@ -26,6 +26,34 @@ describe("tenant.service", () => {
     const t = await prisma.tenant.findUniqueOrThrow({ where: { id: core.tenantId } });
     expect(t.settings).toMatchObject({ palette: "green", futureFeature: { foo: "bar" } });
   });
+
+  it("updateTenantSettings บันทึกการตั้งค่า smtp และอ่านกลับมาได้ถูกต้อง", async () => {
+    const core = await seedCore(prisma, { tenantCode: "T_SMTP", nameTh: "ท", nameEn: "T" });
+    const adminId = await seedUser(prisma, core.tenantId, { email: "smtp@t.t", name: "A", passwordHash: "x", roleIds: [core.roleIds.SUPER_ADMIN] });
+    await updateTenantSettings({
+      tenantId: core.tenantId,
+      actorId: adminId,
+      nameTh: "ท",
+      nameEn: "T",
+      logoUrl: "",
+      palette: "blue",
+      smtp: {
+        enabled: true,
+        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        user: "test@gmail.com",
+        pass: "abcd efgh ijkl mnop",
+        fromName: "คณะพุทธศาสตร์ มจร",
+        fromEmail: "test@gmail.com",
+      },
+    });
+    const s = await getTenantSettings(core.tenantId);
+    expect(s.smtp.enabled).toBe(true);
+    expect(s.smtp.service).toBe("gmail");
+    expect(s.smtp.user).toBe("test@gmail.com");
+  });
 });
 
 /**

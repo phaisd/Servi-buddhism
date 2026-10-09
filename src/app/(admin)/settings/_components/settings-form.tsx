@@ -14,19 +14,22 @@ import {
   DEFAULT_NEWS_SECTION_SETTINGS,
   DEFAULT_FACULTY_BANNER_SETTINGS,
   DEFAULT_FOOTER_SETTINGS,
+  DEFAULT_SMTP_SETTINGS,
   type TenantSettings,
 } from "@/features/identity";
 import { updateSettingsAction } from "@/features/identity/actions";
+import { Mail } from "lucide-react";
 import { GeneralSettingsTab } from "./general-settings-tab";
 import { HeroSettingsTab } from "./hero-settings-tab";
 import { ServicesSettingsTab } from "./services-settings-tab";
 import { PortalContentSettingsTab } from "./portal-content-settings-tab";
 import { FooterSettingsTab } from "./footer-settings-tab";
+import { SmtpSettingsTab } from "./smtp-settings-tab";
 
 export function SettingsForm({ initial }: { initial: TenantSettings }) {
   const t = useT();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"general" | "hero" | "services" | "content" | "footer">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "hero" | "services" | "content" | "footer" | "smtp">("general");
   const [form, setForm] = useState({
     nameTh: initial.nameTh,
     nameEn: initial.nameEn,
@@ -37,6 +40,7 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
     newsSection: initial.newsSection ?? DEFAULT_NEWS_SECTION_SETTINGS,
     facultyBanner: initial.facultyBanner ?? DEFAULT_FACULTY_BANNER_SETTINGS,
     footer: initial.footer ?? DEFAULT_FOOTER_SETTINGS,
+    smtp: initial.smtp ?? DEFAULT_SMTP_SETTINGS,
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [pending, start] = useTransition();
@@ -129,6 +133,19 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
           <PanelBottom className="w-4 h-4" />
           <span>ท้ายเว็บ (Portal Footer)</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("smtp")}
+          className={cn(
+            "px-4 py-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 -mb-px",
+            activeTab === "smtp"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Mail className="w-4 h-4" />
+          <span>อีเมล & SMTP (Gmail)</span>
+        </button>
       </div>
 
       <div className="set-cards">
@@ -153,6 +170,12 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
           <FooterSettingsTab
             value={form.footer}
             onChange={(f) => setForm((prev) => ({ ...prev, footer: f }))}
+          />
+        ) : activeTab === "smtp" ? (
+          <SmtpSettingsTab
+            smtp={form.smtp}
+            errors={errors}
+            onChange={(s) => setForm((prev) => ({ ...prev, smtp: s }))}
           />
         ) : (
           <GeneralSettingsTab

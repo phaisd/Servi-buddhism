@@ -93,3 +93,89 @@ export async function removeLogoAction(): Promise<ActionResult<void>> {
   });
 }
 
+export async function testSmtpAction(input: unknown): Promise<ActionResult<{ message: string }>> {
+  return runAction(async () => {
+    await requirePermission(P.settingsManage);
+    const nodemailer = (await import("nodemailer")).default;
+    const { smtpSettingsSchema } = await import("../validations/settings");
+    const z = (await import("zod")).default;
+
+    const schema = z.object({
+      smtp: smtpSettingsSchema,
+      testEmail: z.string().trim().email("กรุณาระบุรูปแบบอีเมลปลายทางให้ถูกต้อง"),
+    });
+
+    const parsed = schema.parse(input);
+    const { smtp, testEmail } = parsed;
+
+    if (!smtp.user) {
+      throw errors.validation("Missing user", { user: ["กรุณาระบุที่อยู่อีเมล Gmail ผู้ส่ง"] });
+    }
+    if (!smtp.pass) {
+      throw errors.validation("Missing pass", { pass: ["กรุณาระบุรหัสผ่านสำหรับแอป (App Password)"] });
+    }
+
+    const host = smtp.service === "gmail" ? "smtp.gmail.com" : smtp.host || "smtp.gmail.com";
+    const port = smtp.service === "gmail" ? (smtp.secure ? 465 : 587) : smtp.port || 465;
+    const secure = smtp.secure ?? (port === 465);
+    const pass = smtp.pass.replace(/\s+/g, "");
+
+    const transport = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user: smtp.user.trim(), pass },
+      connectionTimeout: 10000,
+    });
+
+    try {
+      await transport.verify();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw errors.validation("SMTP verification failed", {
+        pass: [
+          `ไม่สามารถยืนยันการเชื่อมต่อ SMTP ได้: ${msg} (หากใช้ Gmail กรุณาตรวจสอบว่าได้สร้าง "รหัสผ่านสำหรับแอป" 16 หลัก และเปิด 2-Step Verification แล้ว)`,
+        ],
+      });
+    }
+
+    const fromName = smtp.fromName || "คณะพุทธศาสตร์ มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย";
+    const fromEmail = smtp.fromEmail || smtp.user.trim();
+    const from = `"${fromName}" <${fromEmail}>`;
+
+    try {
+      await transport.sendMail({
+        from,
+        to: testEmail,
+        subject: "ทดสอบการเชื่อมต่อระบบอีเมล (Gmail SMTP Test)",
+        text: `สวัสดีครับ/ค่ะ,\n\nนี่คืออีเมลทดสอบการเชื่อมต่อระบบ Gmail SMTP จาก MCU Portal\nระบบสามารถเชื่อมต่อและส่งอีเมลสำเร็จเรียบร้อยแล้ว\n\nเวลาที่ส่ง: ${new Date().toLocaleString("th-TH")}\nส่งจาก: ${fromEmail}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+            <h2 style="color: #2563eb; margin-top: 0;">การเชื่อมต่อ Gmail SMTP สำเร็จ ✅</h2>
+            <p style="font-size: 15px; color: #334155; line-height: 1.6;">
+              นี่คืออีเมลทดสอบการเชื่อมต่อระบบ Gmail SMTP จาก <strong>${fromName}</strong>
+            </p>
+            <div style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+              <p style="margin: 0; font-size: 14px; color: #475569;">
+                <strong>ผู้ส่ง:</strong> ${fromEmail}<br/>
+                <strong>เซิร์ฟเวอร์:</strong> ${host}:${port}<br/>
+                <strong>เวลาที่ส่ง:</strong> ${new Date().toLocaleString("th-TH")}
+              </p>
+            </div>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 0;">
+              ข้อความนี้สร้างขึ้นโดยอัตโนมัติจากการทดสอบการตั้งค่า SMTP ในหน้า Settings
+            </p>
+          </div>
+        `,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw errors.validation("Send mail failed", {
+        testEmail: [`การเชื่อมต่อสำเร็จ แต่ส่งอีเมลทดสอบไม่สำเร็จ: ${msg}`],
+      });
+    }
+
+    return { message: `เชื่อมต่อสำเร็จและส่งอีเมลทดสอบไปยัง ${testEmail} เรียบร้อยแล้ว` };
+  });
+}
+

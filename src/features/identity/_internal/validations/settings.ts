@@ -215,6 +215,33 @@ export const footerSchema = z.object({
   showStaffConsole: z.boolean().default(true),
 });
 
+export const smtpSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  service: z.enum(["gmail", "custom"]).default("gmail"),
+  host: z.string().default("smtp.gmail.com"),
+  port: z.coerce.number().default(465),
+  secure: z.boolean().default(true),
+  user: z.string().default(""),
+  pass: z.string().default(""),
+  fromName: z.string().default(""),
+  fromEmail: z.string().default(""),
+});
+
+export type SmtpSettingsInput = z.infer<typeof smtpSettingsSchema>;
+export type SmtpSettings = SmtpSettingsInput;
+
+export const DEFAULT_SMTP_SETTINGS: SmtpSettings = {
+  enabled: false,
+  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  user: "",
+  pass: "",
+  fromName: "คณะพุทธศาสตร์ มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+  fromEmail: "",
+};
+
 export const updateSettingsSchema = z.object({
   nameTh: z.string().trim().min(1).max(255),
   nameEn: z.string().trim().min(1).max(255),
@@ -233,6 +260,7 @@ export const updateSettingsSchema = z.object({
   newsSection: newsSectionSchema.optional(),
   facultyBanner: facultyBannerSchema.optional(),
   footer: footerSchema.optional(),
+  smtp: smtpSettingsSchema.optional(),
 });
 export const updateProfileSchema = z.object({ name: z.string().trim().min(1).max(255), locale: z.enum(["th", "en"]) });
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -458,6 +486,7 @@ export interface TenantSettings {
   newsSection: NewsSectionSettings;
   facultyBanner: FacultyBannerSettings;
   footer: FooterSettings;
+  smtp: SmtpSettings;
 }
 
 

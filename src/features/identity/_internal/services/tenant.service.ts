@@ -10,6 +10,7 @@ import {
   DEFAULT_NEWS_SECTION_SETTINGS,
   DEFAULT_FACULTY_BANNER_SETTINGS,
   DEFAULT_FOOTER_SETTINGS,
+  DEFAULT_SMTP_SETTINGS,
   type TenantSettings,
   type HeroSettings,
   type HeroNavLink,
@@ -19,6 +20,7 @@ import {
   type NewsSectionSettings,
   type FacultyBannerSettings,
   type FooterSettings,
+  type SmtpSettings,
 } from "../validations/settings";
 
 export type {
@@ -31,6 +33,7 @@ export type {
   NewsSectionSettings,
   FacultyBannerSettings,
   FooterSettings,
+  SmtpSettings,
 };
 export {
   DEFAULT_HERO_SETTINGS,
@@ -38,6 +41,7 @@ export {
   DEFAULT_NEWS_SECTION_SETTINGS,
   DEFAULT_FACULTY_BANNER_SETTINGS,
   DEFAULT_FOOTER_SETTINGS,
+  DEFAULT_SMTP_SETTINGS,
 };
 
 async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSettings> {
@@ -50,6 +54,7 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     newsSection?: unknown;
     facultyBanner?: unknown;
     footer?: unknown;
+    smtp?: unknown;
   }) ?? {};
   const p = settingsObj.palette;
   const rawHero = (settingsObj.hero as Partial<HeroSettings>) ?? {};
@@ -99,6 +104,12 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     ...rawFooter,
   };
 
+  const rawSmtp = (settingsObj.smtp as Partial<SmtpSettings>) ?? {};
+  const smtp: SmtpSettings = {
+    ...DEFAULT_SMTP_SETTINGS,
+    ...rawSmtp,
+  };
+
   return {
     code: t.code,
     nameTh: t.nameTh,
@@ -110,6 +121,7 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     newsSection,
     facultyBanner,
     footer,
+    smtp,
   };
 }
 
@@ -117,7 +129,7 @@ export async function getTenantSettings(tenantId: string): Promise<TenantSetting
   return readTenantSettings(tenantId, prisma);
 }
 
-/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette, hero, servicesSection, newsSection, facultyBanner, footer ไม่ทับทั้งก้อน */
+/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette, hero, servicesSection, newsSection, facultyBanner, footer, smtp ไม่ทับทั้งก้อน */
 export async function updateTenantSettings(input: { tenantId: string; actorId: string } & UpdateSettingsInput): Promise<void> {
   await prisma.$transaction(async (tx) => {
     // อ่านผ่าน tx เดียวกัน ไม่ใช่ client กลาง
@@ -132,6 +144,7 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
       ...(input.newsSection ? { newsSection: input.newsSection } : {}),
       ...(input.facultyBanner ? { facultyBanner: input.facultyBanner } : {}),
       ...(input.footer ? { footer: input.footer } : {}),
+      ...(input.smtp ? { smtp: input.smtp } : {}),
     };
     await tx.tenant.update({
       where: { id: input.tenantId },
