@@ -118,9 +118,9 @@ export function SmtpSettingsTab({ smtp, errors, onChange }: SmtpSettingsTabProps
                     onChange({
                       ...smtp,
                       service: "custom",
-                      host: smtp.host === "smtp.gmail.com" ? "smtp.office365.com" : smtp.host,
-                      port: 587,
-                      secure: false,
+                      host: smtp.host || "smtp.gmail.com",
+                      port: smtp.port || 465,
+                      secure: smtp.secure ?? true,
                     });
                   }}
                   className={cn(
@@ -134,7 +134,7 @@ export function SmtpSettingsTab({ smtp, errors, onChange }: SmtpSettingsTabProps
                   <div>
                     <div className="text-sm font-bold text-[var(--text)]">เซิร์ฟเวอร์กำหนดเอง (Custom SMTP)</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
-                      เซิร์ฟเวอร์มหาวิทยาลัย, Outlook หรือ Mail Server ภายใน
+                      เซิร์ฟเวอร์มหาวิทยาลัย หรือ Mail Server ภายในองค์กร
                     </div>
                   </div>
                 </button>
@@ -270,7 +270,7 @@ export function SmtpSettingsTab({ smtp, errors, onChange }: SmtpSettingsTabProps
                       type="text"
                       value={smtp.host}
                       onChange={(e) => updateField("host", e.target.value)}
-                      placeholder="เช่น smtp.office365.com หรือ mail.mcu.ac.th"
+                      placeholder="เช่น smtp.gmail.com หรือ mail.mcu.ac.th"
                     />
                   </LiyonField>
 

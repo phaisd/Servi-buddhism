@@ -132,10 +132,14 @@ export async function testSmtpAction(input: unknown): Promise<ActionResult<{ mes
       await transport.verify();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      let extraHint = "";
+      if (host.includes("office365") || host.includes("outlook") || msg.includes("OUTLOOK.COM")) {
+        extraHint = " (ตรวจพบว่ากำลังเชื่อมต่อกับเซิร์ฟเวอร์ Microsoft Outlook: หากท่านใช้รหัสผ่านสำหรับแอปของ Gmail กรุณากดเลือกตัวเลือก 'Gmail / Google Workspace' หรือเปลี่ยน SMTP Host เป็น smtp.gmail.com)";
+      } else {
+        extraHint = ` (หากใช้ Gmail กรุณาตรวจสอบว่าได้สร้าง "รหัสผ่านสำหรับแอป" 16 หลัก และเปิด 2-Step Verification แล้ว)`;
+      }
       throw errors.validation("SMTP verification failed", {
-        pass: [
-          `ไม่สามารถยืนยันการเชื่อมต่อ SMTP ได้: ${msg} (หากใช้ Gmail กรุณาตรวจสอบว่าได้สร้าง "รหัสผ่านสำหรับแอป" 16 หลัก และเปิด 2-Step Verification แล้ว)`,
-        ],
+        pass: [`ไม่สามารถยืนยันการเชื่อมต่อ SMTP ได้: ${msg}${extraHint}`],
       });
     }
 
