@@ -41,6 +41,8 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   ShieldCheck,
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function PortalIndexPage() {
   const [settings, locale, tenantId] = await Promise.all([
     resolveTenantSettings(),

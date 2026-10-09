@@ -15,11 +15,17 @@ async function main() {
     console.error("[seed] ปฏิเสธ: NODE_ENV=production — ใช้ npm run db:bootstrap แทน");
     process.exit(1);
   }
-  const core = await seedCore(prisma, { tenantCode: "DEMO", nameTh: "องค์กรตัวอย่าง", nameEn: "Sample Organization" });
+  const core = await seedCore(prisma, { tenantCode: "MCU", nameTh: "คณะพุทธศาสตร์", nameEn: "Faculty of Buddhism" });
+  // สร้าง DEMO tenant ไว้ด้วยเพื่อความเข้ากันได้ย้อนหลัง
+  await seedCore(prisma, { tenantCode: "DEMO", nameTh: "คณะพุทธศาสตร์ (Demo)", nameEn: "Faculty of Buddhism (Demo)" });
+
   const hash = await bcrypt.hash(DEV_PASSWORD, 12);
   const users = [
-    { email: "admin@app.local", name: "ผู้ดูแลสูงสุด", roles: ["SUPER_ADMIN"] },
+    { email: "admin@buddhist.mcu.ac.th", name: "ผู้ดูแลระบบ คณะพุทธศาสตร์", roles: ["SUPER_ADMIN"] },
+    { email: "admin@app.local", name: "ผู้ดูแลสูงสุด (Local Dev)", roles: ["SUPER_ADMIN"] },
+    { email: "staff@buddhist.mcu.ac.th", name: "เจ้าหน้าที่บริหารงานทั่วไป", roles: ["STAFF"] },
     { email: "staff@app.local", name: "เจ้าหน้าที่", roles: ["STAFF"] },
+    { email: "student@buddhist.mcu.ac.th", name: "พระมหาธีรภัทร นิสิตชั้นปีที่ 3", roles: ["VIEWER"] },
     { email: "viewer@app.local", name: "ผู้ดู", roles: ["VIEWER"] },
     { email: "lockme@app.local", name: "บัญชีทดสอบล็อก", roles: ["VIEWER"] },
     { email: "forced@app.local", name: "บัญชีบังคับเปลี่ยนรหัส", roles: ["VIEWER"], mustChangePassword: true },
@@ -75,7 +81,7 @@ async function main() {
     });
 
     // Seed Certificates
-    const certType1 = await prisma.certificateType.create({
+    const certType1 = await prisma.certificateType.findFirst({ where: { tenantId: core.tenantId, name: "หนังสือรับรองสภาพนิสิต" } }) ?? await prisma.certificateType.create({
       data: {
         tenantId: core.tenantId,
         name: "หนังสือรับรองสภาพนิสิต",
@@ -84,7 +90,7 @@ async function main() {
       }
     });
 
-    const certType2 = await prisma.certificateType.create({
+    const certType2 = await prisma.certificateType.findFirst({ where: { tenantId: core.tenantId, name: "ใบรายงานผลการศึกษา (Transcript)" } }) ?? await prisma.certificateType.create({
       data: {
         tenantId: core.tenantId,
         name: "ใบรายงานผลการศึกษา (Transcript)",
@@ -95,27 +101,31 @@ async function main() {
 
     const viewerUser = await prisma.user.findUnique({ where: { email: "viewer@app.local" } });
     if (viewerUser) {
-      await prisma.certificateRequest.create({
-        data: {
-          tenantId: core.tenantId,
-          userId: viewerUser.id,
-          certificateTypeId: certType1.id,
-          status: "PENDING",
-          note: "นำไปขอทุนการศึกษาครับ",
-        }
-      });
-      await prisma.certificateRequest.create({
-        data: {
-          tenantId: core.tenantId,
-          userId: viewerUser.id,
-          certificateTypeId: certType2.id,
-          status: "APPROVED",
-          issuedDocumentUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        }
-      });
+      const existingReq = await prisma.certificateRequest.findFirst({ where: { tenantId: core.tenantId, userId: viewerUser.id } });
+      if (!existingReq) {
+        await prisma.certificateRequest.create({
+          data: {
+            tenantId: core.tenantId,
+            userId: viewerUser.id,
+            certificateTypeId: certType1.id,
+            status: "PENDING",
+            note: "นำไปขอทุนการศึกษาครับ",
+          }
+        });
+        await prisma.certificateRequest.create({
+          data: {
+            tenantId: core.tenantId,
+            userId: viewerUser.id,
+            certificateTypeId: certType2.id,
+            status: "APPROVED",
+            issuedDocumentUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+          }
+        });
+      }
     }
+
     // Seed Personnel
-    const dept1 = await prisma.department.create({
+    const dept1 = await prisma.department.findFirst({ where: { tenantId: core.tenantId, nameTh: "ภาควิชาพระพุทธศาสนา" } }) ?? await prisma.department.create({
       data: {
         tenantId: core.tenantId,
         nameTh: "ภาควิชาพระพุทธศาสนา",
@@ -124,7 +134,7 @@ async function main() {
       }
     });
 
-    const dept2 = await prisma.department.create({
+    const dept2 = await prisma.department.findFirst({ where: { tenantId: core.tenantId, nameTh: "ภาควิชาปรัชญา" } }) ?? await prisma.department.create({
       data: {
         tenantId: core.tenantId,
         nameTh: "ภาควิชาปรัชญา",
@@ -133,93 +143,105 @@ async function main() {
       }
     });
 
-    await prisma.personnel.create({
-      data: {
-        tenantId: core.tenantId,
-        departmentId: dept1.id,
-        firstNameTh: "พระมหาบุญชู",
-        lastNameTh: "ญาณวิโรจน์",
-        positionTh: "คณบดีคณะพุทธศาสตร์",
-        type: "EXECUTIVE",
-        email: "boonchoo@app.local",
-        phoneNumber: "02-123-4567",
-        orderIndex: 1,
-      }
-    });
+    const existingPerson = await prisma.personnel.findFirst({ where: { tenantId: core.tenantId, email: "boonchoo@app.local" } });
+    if (!existingPerson) {
+      await prisma.personnel.create({
+        data: {
+          tenantId: core.tenantId,
+          departmentId: dept1.id,
+          firstNameTh: "พระมหาบุญชู",
+          lastNameTh: "ญาณวิโรจน์",
+          positionTh: "คณบดีคณะพุทธศาสตร์",
+          type: "EXECUTIVE",
+          email: "boonchoo@app.local",
+          phoneNumber: "02-123-4567",
+          orderIndex: 1,
+        }
+      });
 
-    await prisma.personnel.create({
-      data: {
-        tenantId: core.tenantId,
-        departmentId: dept1.id,
-        firstNameTh: "สมชาย",
-        lastNameTh: "ใจดี",
-        positionTh: "อาจารย์ประจำภาควิชา",
-        type: "ACADEMIC",
-        email: "somchai@app.local",
-        orderIndex: 2,
-      }
-    });
+      await prisma.personnel.create({
+        data: {
+          tenantId: core.tenantId,
+          departmentId: dept1.id,
+          firstNameTh: "สมชาย",
+          lastNameTh: "ใจดี",
+          positionTh: "อาจารย์ประจำภาควิชา",
+          type: "ACADEMIC",
+          email: "somchai@app.local",
+          orderIndex: 2,
+        }
+      });
 
-    await prisma.personnel.create({
-      data: {
-        tenantId: core.tenantId,
-        departmentId: dept2.id,
-        firstNameTh: "สมหญิง",
-        lastNameTh: "รักดี",
-        positionTh: "อาจารย์ประจำภาควิชา",
-        type: "ACADEMIC",
-        email: "somying@app.local",
-        orderIndex: 1,
-      }
-    });
+      await prisma.personnel.create({
+        data: {
+          tenantId: core.tenantId,
+          departmentId: dept2.id,
+          firstNameTh: "สมหญิง",
+          lastNameTh: "รักดี",
+          positionTh: "อาจารย์ประจำภาควิชา",
+          type: "ACADEMIC",
+          email: "somying@app.local",
+          orderIndex: 1,
+        }
+      });
+    }
+
     // Seed Curriculum
-    await prisma.curriculum.create({
-      data: {
-        tenantId: core.tenantId,
-        nameTh: "พุทธศาสตรบัณฑิต สาขาวิชาพระพุทธศาสนา",
-        nameEn: "Bachelor of Arts in Buddhist Studies",
-        degree: "BACHELOR",
-        durationYears: 4,
-        descriptionTh: "ศึกษาหลักธรรมคำสอนในพระพุทธศาสนา ประวัติศาสตร์ และการประยุกต์ใช้ในสังคมปัจจุบัน",
-        orderIndex: 1,
-      }
-    });
+    const existingCurr = await prisma.curriculum.findFirst({ where: { tenantId: core.tenantId, nameTh: "พุทธศาสตรบัณฑิต สาขาวิชาพระพุทธศาสนา" } });
+    if (!existingCurr) {
+      await prisma.curriculum.create({
+        data: {
+          tenantId: core.tenantId,
+          nameTh: "พุทธศาสตรบัณฑิต สาขาวิชาพระพุทธศาสนา",
+          nameEn: "Bachelor of Arts in Buddhist Studies",
+          degree: "BACHELOR",
+          durationYears: 4,
+          descriptionTh: "ศึกษาหลักธรรมคำสอนในพระพุทธศาสนา ประวัติศาสตร์ และการประยุกต์ใช้ในสังคมปัจจุบัน",
+          orderIndex: 1,
+        }
+      });
 
-    await prisma.curriculum.create({
-      data: {
-        tenantId: core.tenantId,
-        nameTh: "พุทธศาสตรมหาบัณฑิต สาขาวิชาปรัชญา",
-        nameEn: "Master of Arts in Philosophy",
-        degree: "MASTER",
-        durationYears: 2,
-        descriptionTh: "ศึกษาและวิจัยเชิงลึกในปรัชญาตะวันออกและตะวันตก",
-        orderIndex: 2,
-      }
-    });
+      await prisma.curriculum.create({
+        data: {
+          tenantId: core.tenantId,
+          nameTh: "พุทธศาสตรมหาบัณฑิต สาขาวิชาปรัชญา",
+          nameEn: "Master of Arts in Philosophy",
+          degree: "MASTER",
+          durationYears: 2,
+          descriptionTh: "ศึกษาและวิจัยเชิงลึกในปรัชญาตะวันออกและตะวันตก",
+          orderIndex: 2,
+        }
+      });
+    }
+
     // Seed Administration
-    await prisma.adminDocument.create({
-      data: {
-        tenantId: core.tenantId,
-        title: "คู่มือการปฏิบัติงานสำหรับบุคลากรใหม่",
-        description: "อธิบายโครงสร้าง สวัสดิการ และการทำงานเบื้องต้น",
-        fileUrl: "https://example.com/docs/manual-new-staff.pdf",
-        category: "MANUAL",
-        visibility: "INTERNAL",
-      }
-    });
+    const existingDoc = await prisma.adminDocument.findFirst({ where: { tenantId: core.tenantId, title: "คู่มือการปฏิบัติงานสำหรับบุคลากรใหม่" } });
+    if (!existingDoc) {
+      await prisma.adminDocument.create({
+        data: {
+          tenantId: core.tenantId,
+          title: "คู่มือการปฏิบัติงานสำหรับบุคลากรใหม่",
+          description: "อธิบายโครงสร้าง สวัสดิการ และการทำงานเบื้องต้น",
+          fileUrl: "https://example.com/docs/manual-new-staff.pdf",
+          category: "MANUAL",
+          visibility: "INTERNAL",
+        }
+      });
 
-    await prisma.adminDocument.create({
-      data: {
-        tenantId: core.tenantId,
-        title: "แบบฟอร์มขอลาพักผ่อน",
-        description: "แบบฟอร์มสำหรับยื่นขอลาพักผ่อนประจำปี",
-        fileUrl: "https://example.com/docs/leave-form.pdf",
-        category: "FORM",
-        visibility: "PUBLIC",
-      }
-    });
+      await prisma.adminDocument.create({
+        data: {
+          tenantId: core.tenantId,
+          title: "แบบฟอร์มขอลาพักผ่อน",
+          description: "แบบฟอร์มสำหรับยื่นขอลาพักผ่อนประจำปี",
+          fileUrl: "https://example.com/docs/leave-form.pdf",
+          category: "FORM",
+          visibility: "PUBLIC",
+        }
+      });
+    }
+
     // Seed Meetings
-    const room1 = await prisma.meetingRoom.create({
+    const room1 = await prisma.meetingRoom.findFirst({ where: { tenantId: core.tenantId, name: "ห้องประชุม 1 (พุทธปัญญา)" } }) ?? await prisma.meetingRoom.create({
       data: {
         tenantId: core.tenantId,
         name: "ห้องประชุม 1 (พุทธปัญญา)",
@@ -228,29 +250,36 @@ async function main() {
       }
     });
 
-    await prisma.meetingRoom.create({
-      data: {
-        tenantId: core.tenantId,
-        name: "ห้องประชุม 2 (สัมมาทิฏฐิ)",
-        capacity: 10,
-        equipment: "Smart TV, Video Conference",
-      }
-    });
+    const existingRoom2 = await prisma.meetingRoom.findFirst({ where: { tenantId: core.tenantId, name: "ห้องประชุม 2 (สัมมาทิฏฐิ)" } });
+    if (!existingRoom2) {
+      await prisma.meetingRoom.create({
+        data: {
+          tenantId: core.tenantId,
+          name: "ห้องประชุม 2 (สัมมาทิฏฐิ)",
+          capacity: 10,
+          equipment: "Smart TV, Video Conference",
+        }
+      });
+    }
 
-    await prisma.meetingBooking.create({
-      data: {
-        tenantId: core.tenantId,
-        roomId: room1.id,
-        requesterId: adminUser!.id,
-        title: "ประชุมอาจารย์ประจำภาควิชา",
-        startTime: new Date(Date.now() + 86400000), // Tomorrow
-        endTime: new Date(Date.now() + 86400000 + 7200000), // +2 hours
-        status: "APPROVED",
-        remark: "ขอเตรียมน้ำดื่ม 30 ขวด",
-      }
-    });
+    const existingBooking = await prisma.meetingBooking.findFirst({ where: { tenantId: core.tenantId, roomId: room1.id } });
+    if (!existingBooking) {
+      await prisma.meetingBooking.create({
+        data: {
+          tenantId: core.tenantId,
+          roomId: room1.id,
+          requesterId: adminUser!.id,
+          title: "ประชุมอาจารย์ประจำภาควิชา",
+          startTime: new Date(Date.now() + 86400000), // Tomorrow
+          endTime: new Date(Date.now() + 86400000 + 7200000), // +2 hours
+          status: "APPROVED",
+          remark: "ขอเตรียมน้ำดื่ม 30 ขวด",
+        }
+      });
+    }
+
     // Seed Attendance
-    const attClass = await prisma.attendanceClass.create({
+    const attClass = await prisma.attendanceClass.findFirst({ where: { tenantId: core.tenantId, courseCode: "BUD101" } }) ?? await prisma.attendanceClass.create({
       data: {
         tenantId: core.tenantId,
         courseCode: "BUD101",
@@ -260,7 +289,7 @@ async function main() {
       }
     });
 
-    const session1 = await prisma.attendanceSession.create({
+    const session1 = await prisma.attendanceSession.findFirst({ where: { tenantId: core.tenantId, classId: attClass.id } }) ?? await prisma.attendanceSession.create({
       data: {
         tenantId: core.tenantId,
         classId: attClass.id,
@@ -269,17 +298,21 @@ async function main() {
       }
     });
 
-    await prisma.attendanceRecord.create({
-      data: {
-        tenantId: core.tenantId,
-        sessionId: session1.id,
-        studentCode: "660001",
-        studentName: "นาย สมชาย ใจดี",
-        status: "PRESENT",
-      }
-    });
+    const existingRecord = await prisma.attendanceRecord.findFirst({ where: { tenantId: core.tenantId, sessionId: session1.id } });
+    if (!existingRecord) {
+      await prisma.attendanceRecord.create({
+        data: {
+          tenantId: core.tenantId,
+          sessionId: session1.id,
+          studentCode: "660001",
+          studentName: "นาย สมชาย ใจดี",
+          status: "PRESENT",
+        }
+      });
+    }
+
     // Seed Events
-    const evt = await prisma.event.create({
+    const evt = await prisma.event.findFirst({ where: { tenantId: core.tenantId, title: "ค่ายพุทธธรรมนำชีวิต" } }) ?? await prisma.event.create({
       data: {
         tenantId: core.tenantId,
         title: "ค่ายพุทธธรรมนำชีวิต",
@@ -291,18 +324,25 @@ async function main() {
       }
     });
 
-    await prisma.eventRegistration.create({
-      data: {
-        tenantId: core.tenantId,
-        eventId: evt.id,
-        studentCode: "660001",
-        studentName: "นาย สมชาย ใจดี",
-        status: "REGISTERED",
-      }
-    });
+    const existingReg = await prisma.eventRegistration.findFirst({ where: { tenantId: core.tenantId, eventId: evt.id } });
+    if (!existingReg) {
+      await prisma.eventRegistration.create({
+        data: {
+          tenantId: core.tenantId,
+          eventId: evt.id,
+          studentCode: "660001",
+          studentName: "นาย สมชาย ใจดี",
+          status: "REGISTERED",
+        }
+      });
+    }
   }
 
-  console.log(`[seed] เสร็จ — login: admin@app.local / ${DEV_PASSWORD}`);
+  console.log(`[seed] เสร็จสิ้น — บัญชีเข้าสู่ระบบ:`);
+  console.log(`  1. ผู้ดูแลระบบ MCU: admin@buddhist.mcu.ac.th / ${DEV_PASSWORD}`);
+  console.log(`  2. ผู้ดูแลระบบ Local: admin@app.local / ${DEV_PASSWORD}`);
+  console.log(`  3. เจ้าหน้าที่ MCU: staff@buddhist.mcu.ac.th / ${DEV_PASSWORD}`);
+  console.log(`  4. นิสิต MCU: student@buddhist.mcu.ac.th / ${DEV_PASSWORD}`);
 }
 
 main().finally(() => prisma.$disconnect());

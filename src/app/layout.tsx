@@ -9,14 +9,15 @@ import { getT } from "@/i18n/server";
 import { UI_MESSAGES } from "@/i18n";
 import { getLocaleCookie } from "@/shared/lib/i18n/server";
 import { DEFAULT_LOCALE } from "@/shared/lib/i18n/config";
-import { auth, resolvePalette } from "@/features/identity/server";
+import { auth, resolvePalette, resolveTenantSettings } from "@/features/identity/server";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin", "latin-ext"] });
 const sarabun = Sarabun({ variable: "--font-sarabun", subsets: ["thai", "latin"], weight: ["300", "400", "500", "600", "700", "800"], display: "swap" });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  return { title: t("app.name"), description: t("app.tagline") };
+  const [t, settings] = await Promise.all([getT(), resolveTenantSettings().catch(() => null)]);
+  const title = settings?.nameTh || t("app.name");
+  return { title, description: t("app.tagline") };
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

@@ -21,6 +21,9 @@ export async function updateSettingsAction(input: unknown): Promise<ActionResult
     revalidatePath("/", "layout"); // data-palette บน <html> อ่านใหม่
     revalidatePath("/portal", "layout");
     revalidatePath("/(admin)", "layout");
+    revalidatePath("/(auth)", "layout");
+    revalidatePath("/login");
+    revalidatePath("/settings");
   });
 }
 

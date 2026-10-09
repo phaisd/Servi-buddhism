@@ -2,6 +2,8 @@ import { resolveTenantSettings, auth } from "@/features/identity/server";
 import { PortalNavbar } from "./_components/portal-navbar";
 import { PortalFooter } from "./_components/portal-footer";
 
+export const dynamic = "force-dynamic";
+
 export default async function PortalLayout({
   children,
 }: {

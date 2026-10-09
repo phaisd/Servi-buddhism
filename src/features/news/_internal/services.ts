@@ -819,6 +819,12 @@ export async function getPublicNewsBySlug(
 }
 
 export async function resolvePublicTenantId(): Promise<string> {
+  const mcuTenant = await prisma.tenant.findFirst({
+    where: { code: "MCU", isActive: true },
+    select: { id: true },
+  });
+  if (mcuTenant) return mcuTenant.id;
+
   const demoTenant = await prisma.tenant.findFirst({
     where: { code: "DEMO", isActive: true },
     select: { id: true },
@@ -827,10 +833,12 @@ export async function resolvePublicTenantId(): Promise<string> {
 
   const tenant = await prisma.tenant.findFirst({
     where: { isActive: true },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ userTenants: { _count: "desc" } }, { createdAt: "asc" }],
     select: { id: true },
   });
-  if (!tenant) throw new Error("No active tenant found");
-  return tenant.id;
+  if (tenant) return tenant.id;
+
+  const anyTenant = await prisma.tenant.findFirst({ select: { id: true } });
+  return anyTenant?.id ?? "";
 }
 

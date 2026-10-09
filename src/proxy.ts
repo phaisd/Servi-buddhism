@@ -33,6 +33,11 @@ export async function proxy(req: NextRequest) {
     return NextResponse.rewrite(new URL(`/portal${pathname}${search}`, req.url));
   }
 
+  // 3. Setting singular alias redirect
+  if (pathname === "/setting") {
+    return NextResponse.redirect(new URL(`/settings${search}`, req.url));
+  }
+
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next();
 
   const secureCookie = (process.env.APP_URL ?? "").startsWith("https://");

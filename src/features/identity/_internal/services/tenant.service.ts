@@ -168,6 +168,12 @@ async function sessionTenantId(): Promise<string | null> {
 }
 
 async function fallbackTenantId(): Promise<string | null> {
+  const mcu = await prisma.tenant.findFirst({
+    where: { code: "MCU", isActive: true },
+    select: { id: true },
+  });
+  if (mcu) return mcu.id;
+
   const t = await prisma.tenant.findFirst({
     where: { isActive: true },
     orderBy: [{ userTenants: { _count: "desc" } }, { createdAt: "asc" }],
