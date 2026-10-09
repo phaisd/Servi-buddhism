@@ -10,8 +10,8 @@ WORKDIR /app
 
 # Stage 2: Dependencies Installation
 FROM base AS deps
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci --ignore-scripts
 
 # Stage 3: Builder (Generate Prisma & Next.js Build)
 FROM base AS builder
@@ -19,12 +19,17 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Dummy environment variables for build-time static page collection
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV AUTH_SECRET="dummy-build-time-auth-secret-key-32bytes=="
+ENV APP_URL="http://localhost:3000"
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
 # Generate Prisma Client
 RUN npx prisma generate
 
 # Build Next.js Application in Standalone Mode
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
 RUN npm run build
 
 # Stage 4: Production Runner (Minimal Attack Surface, Non-Root Execution)
@@ -57,14 +62,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy Entrypoint Script
-COPY docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh && chown nextjs:nodejs ./docker-entrypoint.sh
-
 # Run as non-privileged user
 USER nextjs
 
 EXPOSE 3000
 
-ENTRYPOINT ["/usr/bin/dumb-init", "--", "./docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["node", "server.js"]

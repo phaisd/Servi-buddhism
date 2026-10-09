@@ -11,8 +11,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeThisPasswordInProd2026!}
       POSTGRES_DB: ${POSTGRES_DB:-vibe_production}
     ports:
-      # Bind to host loopback port 5433 to avoid collision with host PostgreSQL on 5432
-      - "127.0.0.1:5433:5432"
+      # Administrative loopback port on host
+      - "127.0.0.1:5439:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -41,6 +41,7 @@ services:
       APP_URL: ${APP_URL:-http://localhost:3000}
       DATABASE_URL: postgresql://${POSTGRES_USER:-vibe_admin}:${POSTGRES_PASSWORD:-ChangeThisPasswordInProd2026!}@db:5432/${POSTGRES_DB:-vibe_production}?schema=public
       AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: "true"
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
