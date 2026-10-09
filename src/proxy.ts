@@ -42,9 +42,15 @@ export async function proxy(req: NextRequest) {
 
   const secureCookie = (process.env.APP_URL ?? "").startsWith("https://");
   const token = await getToken({ req, secret: process.env.AUTH_SECRET, secureCookie });
-  const loggedIn = !!token && !token.invalid && !!token.userId;
+  const loggedIn = !!token && !token.invalid && !!token.userId && !!token.tenantId;
 
   if (GUEST_ONLY.includes(pathname)) {
+    if (req.nextUrl.searchParams.has("callbackUrl") || req.nextUrl.searchParams.has("error")) {
+      const res = NextResponse.next();
+      res.cookies.delete("authjs.session-token");
+      res.cookies.delete("__Secure-authjs.session-token");
+      return res;
+    }
     return loggedIn ? NextResponse.redirect(new URL("/dashboard", req.url)) : NextResponse.next();
   }
   if (!loggedIn) {
