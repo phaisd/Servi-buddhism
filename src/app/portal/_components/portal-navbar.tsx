@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
@@ -15,6 +15,7 @@ import {
   User,
   LogOut,
   Settings as SettingsIcon,
+  PhoneCall,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
@@ -29,7 +30,6 @@ interface PortalNavbarProps {
 
 export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
   const t = useT();
   const locale = useLocale();
@@ -54,57 +54,86 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
       ? "Faculty of Buddhism Web Portal"
       : "Buddhist Studies & Academic Portal";
 
-  // Check active state for news category menu items
-  const currentCategory = searchParams.get("category");
-  const isNewsBase = pathname === "/portal/news";
+  // ดึงรายการเมนูนำทาง (Header Navigation Links) จากการตั้งค่าใน Settings
+  const headerSettings = tenantSettings?.hero?.header;
+  const configuredNavLinks = (headerSettings?.navLinks ?? []).filter((l) => l.enabled !== false);
 
-  const navItems = [
-    {
-      label: "ข่าวประชาสัมพันธ์",
-      href: "/portal/news",
-      active: isNewsBase && !currentCategory,
-    },
-    {
-      label: "วิชาการ",
-      href: "/portal/news?category=ACADEMIC",
-      active: isNewsBase && currentCategory === "ACADEMIC",
-    },
-    {
-      label: "กิจกรรม",
-      href: "/portal/news?category=EVENT",
-      active: isNewsBase && currentCategory === "EVENT",
-    },
-    {
-      label: "ศาสนกิจ",
-      href: "/portal/news?category=BUDDHIST_AFFAIRS",
-      active: isNewsBase && currentCategory === "BUDDHIST_AFFAIRS",
-    },
-  ];
+  const navItems =
+    configuredNavLinks.length > 0
+      ? configuredNavLinks.map((link) => {
+          const label =
+            locale === "th"
+              ? link.labelTh || link.labelEn
+              : link.labelEn || link.labelTh;
+          const active =
+            pathname === link.href ||
+            (link.href !== "/" &&
+              link.href !== "/portal" &&
+              !link.href.startsWith("#") &&
+              pathname.startsWith(link.href));
+          return {
+            label,
+            href: link.href,
+            active,
+          };
+        })
+      : [
+          {
+            label: locale === "th" ? "ข่าวประชาสัมพันธ์" : "News",
+            href: "/portal/news",
+            active: pathname.startsWith("/portal/news"),
+          },
+          {
+            label: locale === "th" ? "หลักสูตรการศึกษา" : "Curriculums",
+            href: "/programs",
+            active: pathname.startsWith("/programs"),
+          },
+          {
+            label: locale === "th" ? "ทำเนียบบุคลากร" : "Personnel",
+            href: "/portal/personnel",
+            active: pathname.startsWith("/portal/personnel"),
+          },
+          {
+            label: locale === "th" ? "กิจกรรมนิสิต" : "Student Events",
+            href: "/portal/events",
+            active: pathname.startsWith("/portal/events"),
+          },
+        ];
 
+  // บริการออนไลน์อื่นๆ ที่ยังคงมีให้เข้าถึงได้เสมอ
   const serviceItems = [
-    { label: "หลักสูตรการศึกษา", href: "/programs" },
-    { label: "ทำเนียบบุคลากร", href: "/portal/personnel" },
-    { label: "เอกสารดาวน์โหลด", href: "/documents" },
-    { label: "จองห้องประชุม", href: "/meetings" },
-    { label: "ขอหนังสือรับรอง", href: "/portal/certificates" },
-    { label: "กิจกรรมนิสิต", href: "/portal/events" },
+    { label: locale === "th" ? "หลักสูตรการศึกษา" : "Curriculums", href: "/programs" },
+    { label: locale === "th" ? "ข่าวประชาสัมพันธ์" : "Announcements", href: "/portal/news" },
+    { label: locale === "th" ? "ทำเนียบบุคลากร" : "Personnel Directory", href: "/portal/personnel" },
+    { label: locale === "th" ? "เอกสารดาวน์โหลด" : "Download Documents", href: "/documents" },
+    { label: locale === "th" ? "จองห้องประชุม" : "Meeting Rooms", href: "/meetings" },
+    { label: locale === "th" ? "ขอหนังสือรับรอง" : "Certificate Requests", href: "/portal/certificates" },
+    { label: locale === "th" ? "กิจกรรมนิสิต" : "Student Events", href: "/portal/events" },
   ];
 
-  const isAnyServiceActive = serviceItems.some((s) => pathname.startsWith(s.href) || pathname.startsWith(`/portal${s.href}`));
+  const isAnyServiceActive = serviceItems.some(
+    (s) => pathname.startsWith(s.href) || pathname.startsWith(`/portal${s.href}`)
+  );
+
+  const contactPill = headerSettings?.contactPill?.enabled
+    ? {
+        label:
+          locale === "th"
+            ? headerSettings.contactPill.labelTh || "ติดต่อเรา"
+            : headerSettings.contactPill.labelEn || "CONTACTS",
+        href: headerSettings.contactPill.href || "/portal/documents",
+      }
+    : null;
+
   const initials = (user?.name ?? "?").trim().charAt(0).toUpperCase() || "?";
   const ctx = { roles, permissions, isSuperAdmin };
   const canManageSettings = hasPermission(ctx, P.settingsManage);
-
-  // If on the portal homepage, hide the top navbar so the EMBER.dsgn hero has full-screen impact with its own integrated header
-  if (pathname === "/portal" || pathname === "/") {
-    return null;
-  }
 
   const logoUrl = tenantSettings?.logoUrl || "/uploads/mcu-logo.png";
 
   return (
     <header className="adm-head sticky top-0 z-40 w-full px-4 sm:px-6">
-      {/* Brand Block matching Admin */}
+      {/* Brand Block รูปแบบเดียวกับ Admin Navbar */}
       <Link className="brand-blk !w-auto mr-4 hover:opacity-90 transition-opacity" href="/">
         <i className={logoUrl ? "!bg-background !border !border-border/60 shadow-xs overflow-hidden" : undefined}>
           {logoUrl ? (
@@ -127,7 +156,7 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
         </div>
       </Link>
 
-      {/* Main Desktop Navigation Items */}
+      {/* Main Desktop Navigation Items จาก Header Navigation Links */}
       <nav className="hidden lg:flex items-center gap-1.5 ml-2" aria-label="Portal Navigation">
         {navItems.map((item) => (
           <Link
@@ -144,7 +173,7 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
           </Link>
         ))}
 
-        {/* Dropdown for other Portal Services */}
+        {/* เมนูดรอปดาวน์บริการออนไลน์ (คงเมนูทั้งหมดไว้) */}
         <div className="relative">
           <button
             type="button"
@@ -156,7 +185,7 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
                 : "text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--glass-strong)]"
             )}
           >
-            <span>บริการออนไลน์</span>
+            <span>{locale === "th" ? "บริการออนไลน์" : "Online Services"}</span>
             <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", servicesOpen && "rotate-180")} />
           </button>
 
@@ -186,16 +215,27 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
             </>
           )}
         </div>
+
+        {/* Contact Pill ปุ่มติดต่อ (ถ้าเปิดใช้งานในการตั้งค่า) */}
+        {contactPill && (
+          <Link
+            href={contactPill.href}
+            className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] text-xs font-semibold text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--glass-strong)] transition-colors whitespace-nowrap ml-1"
+          >
+            <PhoneCall className="w-3 h-3 text-primary" />
+            <span>{contactPill.label}</span>
+          </Link>
+        )}
       </nav>
 
       {/* Flexible Spacer */}
       <span className="sp" />
 
-      {/* Right Controls matching Admin Navbar */}
+      {/* Right Controls รูปแบบเดียวกับ Admin Navbar */}
       <div className="flex items-center gap-2">
         <span className="pill role hidden sm:inline-block">Portal</span>
 
-        {/* Theme Toggle Button matching Admin */}
+        {/* ปุ่มสลับโหมดสว่าง/มืด (Theme Toggle) */}
         <button
           type="button"
           className="icon-btn"
@@ -212,10 +252,10 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
           </svg>
         </button>
 
-        {/* Language Switcher */}
+        {/* ปุ่มสลับภาษา (TH / EN) */}
         <LanguageSwitcher className="lang" />
 
-        {/* User Account Avatar Menu (when logged in) or Login Button */}
+        {/* เมนูบัญชีผู้ใช้เมื่อล็อกอิน หรือ ปุ่มเข้าสู่ระบบ */}
         {status === "loading" ? (
           <div aria-hidden="true" className="h-8 w-8 animate-pulse rounded-full bg-[var(--glass-strong)] ml-1" />
         ) : isAuthenticated && user ? (
@@ -253,14 +293,20 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
                   </DropdownMenuPrimitive.Label>
 
                   <DropdownMenuPrimitive.Item asChild>
-                    <Link href="/dashboard" className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-[var(--glass-hover)] transition-colors cursor-pointer">
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-[var(--glass-hover)] transition-colors cursor-pointer"
+                    >
                       <LayoutDashboard className="h-4 w-4 opacity-80" />
                       <span>ระบบบริหารจัดการ (Dashboard)</span>
                     </Link>
                   </DropdownMenuPrimitive.Item>
 
                   <DropdownMenuPrimitive.Item asChild>
-                    <Link href="/me" className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-[var(--glass-hover)] transition-colors cursor-pointer">
+                    <Link
+                      href="/me"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-[var(--glass-hover)] transition-colors cursor-pointer"
+                    >
                       <User className="h-4 w-4 opacity-80" />
                       <span>{t("account.profile")}</span>
                     </Link>
@@ -268,7 +314,10 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
 
                   {canManageSettings && (
                     <DropdownMenuPrimitive.Item asChild>
-                      <Link href="/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-[var(--glass-hover)] transition-colors cursor-pointer">
+                      <Link
+                        href="/settings"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-[var(--glass-hover)] transition-colors cursor-pointer"
+                      >
                         <SettingsIcon className="h-4 w-4 opacity-80" />
                         <span>{t("nav.settings")}</span>
                       </Link>
@@ -347,7 +396,7 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
           </div>
         )}
 
-        {/* Mobile Hamburger Toggle Button */}
+        {/* ปุ่มเมนูสำหรับหน้าจอมือถือ (Hamburger) */}
         <button
           type="button"
           className="icon-btn lg:hidden ml-1"
@@ -358,11 +407,10 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
         </button>
       </div>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile Drawer Navigation สำหรับหน้าจอมือถือ */}
       {mobileMenuOpen && (
         <div className="absolute top-[var(--adm-head-h,64px)] left-0 right-0 bg-[var(--surface)]/95 backdrop-blur-xl border-b border-[var(--border)] shadow-xl p-4 lg:hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="flex flex-col gap-1.5">
-            {/* User profile card on mobile if logged in */}
             {isAuthenticated && user ? (
               <div className="flex items-center gap-3 p-2.5 bg-[var(--glass-strong)] rounded-[var(--r-md)] mb-2 border border-[var(--border)]">
                 <span className="who w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs bg-[var(--brand)] text-[var(--on-brand)] shrink-0 overflow-hidden">
@@ -395,7 +443,7 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
             )}
 
             <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider px-2 py-1">
-              ข่าวสาร & สื่อ
+              {locale === "th" ? "เมนูนำทาง" : "Navigation"}
             </span>
             {navItems.map((item) => (
               <Link
@@ -414,7 +462,7 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
 
             <div className="my-2 border-t border-[var(--border)]" />
             <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider px-2 py-1">
-              บริการออนไลน์
+              {locale === "th" ? "บริการออนไลน์" : "Online Services"}
             </span>
             {serviceItems.map((service) => (
               <Link
@@ -430,6 +478,16 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
                 {service.label}
               </Link>
             ))}
+
+            {contactPill && (
+              <Link
+                href={contactPill.href}
+                className="flex items-center gap-2 px-3 py-2 rounded-[var(--r-md)] text-sm font-medium text-primary hover:bg-[var(--glass-strong)]"
+              >
+                <PhoneCall className="w-4 h-4" />
+                <span>{contactPill.label}</span>
+              </Link>
+            )}
 
             <div className="my-2 border-t border-[var(--border)]" />
             {isAuthenticated ? (
