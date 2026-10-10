@@ -1144,14 +1144,21 @@ export function TimetablesAdminClient({
 
                   {currTimetables.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {currTimetables.map((yt) => (
+                      {currTimetables.map((yt, ytIdx) => (
                         <div
-                          key={yt.yearLevel}
+                          key={`${yt.yearLevel}_${yt.academicYear || "default"}_${yt.semester || 1}_${ytIdx}`}
                           className="p-2 rounded-xl border bg-muted/20 text-center space-y-0.5"
                         >
-                          <p className="text-xs font-bold text-foreground">
-                            ชั้นปีที่ {yt.yearLevel}
-                          </p>
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-xs font-bold text-foreground">
+                              ชั้นปีที่ {yt.yearLevel}
+                            </span>
+                            {yt.academicYear && (
+                              <span className="text-[10px] font-medium text-primary">
+                                ({normalizeAcademicYear(yt.academicYear)}/{yt.semester || 1})
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-muted-foreground font-mono">
                             {yt.slots.length} คาบเรียน
                           </p>
@@ -1302,9 +1309,9 @@ export function TimetablesAdminClient({
           {/* Year Tabs */}
           <div className="flex items-center justify-between border-b pb-2">
             <div className="flex items-center gap-1.5 overflow-x-auto">
-              {timetables.map((yt) => (
+              {timetables.map((yt, ytIdx) => (
                 <button
-                  key={yt.yearLevel}
+                  key={`${yt.yearLevel}_${yt.academicYear || "default"}_${yt.semester || 1}_${ytIdx}`}
                   type="button"
                   onClick={() => setActiveYearLevel(yt.yearLevel)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${

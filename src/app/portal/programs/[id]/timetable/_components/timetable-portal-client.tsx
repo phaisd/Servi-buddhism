@@ -334,9 +334,9 @@ export function TimetablePortalClient({ curriculum, locale: _locale = "th" }: Ti
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1 shrink-0">
                 ระดับชั้นปี:
               </span>
-              {timetables.map((t) => (
+              {timetables.map((t, tIdx) => (
                 <button
-                  key={t.yearLevel}
+                  key={`${t.yearLevel}_${t.academicYear || "default"}_${t.semester || 1}_${tIdx}`}
                   type="button"
                   onClick={() => setSelectedYear(t.yearLevel)}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
