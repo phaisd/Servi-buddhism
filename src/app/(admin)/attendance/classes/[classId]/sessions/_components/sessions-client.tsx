@@ -30,7 +30,7 @@ import {
   deleteSessionAction,
   batchSaveRecordsAction,
 } from "@/features/attendance/actions";
-import { parseClassStudents } from "@/features/attendance/server";
+import { parseClassStudents } from "@/features/attendance";
 import type { AttendanceSession, AttendanceRecord, AttendanceClass } from "@/generated/prisma";
 
 type SessionWithRecords = AttendanceSession & {
