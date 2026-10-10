@@ -24,10 +24,11 @@ export interface LiyonDialogProps {
   danger?: boolean;
   /** `.dlg.wide` — max-width กว้างขึ้นสำหรับฟอร์มยาว */
   wide?: boolean;
+  className?: string;
   children: React.ReactNode;
 }
 
-export function LiyonDialog({ open, onOpenChange, danger, wide, children }: LiyonDialogProps) {
+export function LiyonDialog({ open, onOpenChange, danger, wide, className, children }: LiyonDialogProps) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -37,6 +38,7 @@ export function LiyonDialog({ open, onOpenChange, danger, wide, children }: Liyo
             "dlg fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none",
             danger && "danger",
             wide && "wide",
+            className,
           )}
         >
           <div className="box">{children}</div>

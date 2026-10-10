@@ -51,8 +51,8 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
       : tenantSettings?.nameEn || "Faculty of Buddhism";
   const brandTagline =
     locale === "th"
-      ? "Faculty of Buddhism Web Portal"
-      : "Buddhist Studies & Academic Portal";
+      ? tenantSettings?.nameEn || tenantSettings?.nameTh || "Faculty of Buddhism"
+      : tenantSettings?.nameTh || tenantSettings?.nameEn || "คณะพุทธศาสตร์";
 
   // ดึงรายการเมนูนำทาง (Header Navigation Links) จากการตั้งค่าใน Settings
   const headerSettings = tenantSettings?.hero?.header;
@@ -89,6 +89,11 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
             active: pathname.startsWith("/programs"),
           },
           {
+            label: locale === "th" ? "ตารางการเรียนการสอน" : "Class Timetables",
+            href: "/portal/timetables",
+            active: pathname.startsWith("/portal/timetables"),
+          },
+          {
             label: locale === "th" ? "ทำเนียบบุคลากร" : "Personnel",
             href: "/portal/personnel",
             active: pathname.startsWith("/portal/personnel"),
@@ -100,16 +105,24 @@ export function PortalNavbar({ tenantSettings }: PortalNavbarProps) {
           },
         ];
 
-  // บริการออนไลน์อื่นๆ ที่ยังคงมีให้เข้าถึงได้เสมอ
-  const serviceItems = [
-    { label: locale === "th" ? "หลักสูตรการศึกษา" : "Curriculums", href: "/programs" },
-    { label: locale === "th" ? "ข่าวประชาสัมพันธ์" : "Announcements", href: "/portal/news" },
-    { label: locale === "th" ? "ทำเนียบบุคลากร" : "Personnel Directory", href: "/portal/personnel" },
-    { label: locale === "th" ? "เอกสารดาวน์โหลด" : "Download Documents", href: "/documents" },
-    { label: locale === "th" ? "จองห้องประชุม" : "Meeting Rooms", href: "/meetings" },
-    { label: locale === "th" ? "ขอหนังสือรับรอง" : "Certificate Requests", href: "/portal/certificates" },
-    { label: locale === "th" ? "กิจกรรมนิสิต" : "Student Events", href: "/portal/events" },
-  ];
+  // บริการออนไลน์อื่นๆ ดึงมาจากการตั้งค่าใน Settings -> servicesSection หรือค่าเริ่มต้น
+  const configuredServices = tenantSettings?.servicesSection?.items?.filter((s) => s.enabled !== false);
+  const serviceItems =
+    configuredServices && configuredServices.length > 0
+      ? configuredServices.map((s) => ({
+          label: locale === "th" ? s.titleTh || s.titleEn : s.titleEn || s.titleTh,
+          href: s.href,
+        }))
+      : [
+          { label: locale === "th" ? "ตารางการเรียนการสอน" : "Class Timetables", href: "/portal/timetables" },
+          { label: locale === "th" ? "หลักสูตรการศึกษา" : "Curriculums", href: "/programs" },
+          { label: locale === "th" ? "ข่าวประชาสัมพันธ์" : "Announcements", href: "/portal/news" },
+          { label: locale === "th" ? "ทำเนียบบุคลากร" : "Personnel Directory", href: "/portal/personnel" },
+          { label: locale === "th" ? "เอกสารดาวน์โหลด" : "Download Documents", href: "/documents" },
+          { label: locale === "th" ? "จองห้องประชุม" : "Meeting Rooms", href: "/meetings" },
+          { label: locale === "th" ? "ขอหนังสือรับรอง" : "Certificate Requests", href: "/portal/certificates" },
+          { label: locale === "th" ? "กิจกรรมนิสิต" : "Student Events", href: "/portal/events" },
+        ];
 
   const isAnyServiceActive = serviceItems.some(
     (s) => pathname.startsWith(s.href) || pathname.startsWith(`/portal${s.href}`)

@@ -32,6 +32,26 @@ async function homeTenantId(userId: string): Promise<string | null> {
   return ut?.tenantId ?? null;
 }
 
+async function primaryTenantId(): Promise<string> {
+  const mcu = await prisma.tenant.findFirst({
+    where: { code: "MCU", isActive: true },
+    select: { id: true },
+  });
+  if (mcu) return mcu.id;
+
+  const t = await prisma.tenant.findFirst({
+    where: { isActive: true },
+    orderBy: [{ userTenants: { _count: "desc" } }, { createdAt: "asc" }],
+    select: { id: true },
+  });
+  if (t) return t.id;
+
+  const any = await prisma.tenant.findFirst({ select: { id: true } });
+  if (any) return any.id;
+
+  throw new Error("No active tenant found for auto-registration");
+}
+
 export const { auth, handlers, signIn, signOut } = NextAuth({
   pages: { signIn: "/login" },
   session: { strategy: "jwt", maxAge: 2 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
@@ -65,18 +85,107 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    /** OAuth: ต้องมีบัญชีอยู่ก่อน (แอดมินสร้าง) ไม่สร้างอัตโนมัติ */
+    /** OAuth: มีบัญชีอยู่แล้วให้อัปเดต / บัญชีใหม่ให้ Auto-Register และให้สิทธิ์ "ผู้ดู" (VIEWER) */
     async signIn({ user, account }) {
       if (!account || account.provider === "credentials") return true;
       const providerKey: OAuthProviderId = account.provider === "microsoft-entra-id" ? "microsoft" : "google";
       if (!user.email) return "/login?error=NoAccount";
-      const existing = await prisma.user.findUnique({ where: { email: user.email.toLowerCase() } });
-      if (!existing || !existing.isActive) return "/login?error=NoAccount";
-      await prisma.user.update({
-        where: { id: existing.id },
-        data: { provider: providerKey, providerId: account.providerAccountId, imageUrl: user.image ?? existing.imageUrl, lastLoginAt: new Date() },
+      const normalizedEmail = user.email.toLowerCase();
+      const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+      if (existing) {
+        if (!existing.isActive) return "/login?error=NoAccount";
+
+        // ตรวจสอบว่ามีสมาชิกภาพ tenant หรือยัง ถ้ายังไม่มีให้ผูกกับ tenant หลักและบทบาท VIEWER
+        const existingUt = await prisma.userTenant.findFirst({
+          where: { userId: existing.id, isActive: true },
+        });
+
+        if (!existingUt) {
+          const tenantId = await primaryTenantId();
+          const viewerRole = await prisma.role.findFirst({
+            where: { tenantId, code: "VIEWER" },
+            select: { id: true },
+          });
+
+          await prisma.$transaction(async (tx) => {
+            const ut = await tx.userTenant.create({
+              data: {
+                userId: existing.id,
+                tenantId,
+                isActive: true,
+              },
+            });
+
+            if (viewerRole) {
+              await tx.userRole.create({
+                data: {
+                  userTenantId: ut.id,
+                  roleId: viewerRole.id,
+                  scopeType: "ALL",
+                },
+              });
+            }
+          });
+        }
+
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            provider: providerKey,
+            providerId: account.providerAccountId,
+            imageUrl: user.image ?? existing.imageUrl,
+            lastLoginAt: new Date(),
+          },
+        });
+        user.id = existing.id;
+        return true;
+      }
+
+      // บัญชีใหม่: Auto-Register เมื่อล็อกอินด้วย Google (หรือ OAuth)
+      // ทั้งอีเมลทั่วไป และอีเมลมหาวิทยาลัย (@mcu.ac.th) ได้รับสิทธิ์เป็น "ผู้ดู" (VIEWER)
+      const tenantId = await primaryTenantId();
+      const viewerRole = await prisma.role.findFirst({
+        where: { tenantId, code: "VIEWER" },
+        select: { id: true },
       });
-      user.id = existing.id;
+
+      const newUser = await prisma.$transaction(async (tx) => {
+        const u = await tx.user.create({
+          data: {
+            email: normalizedEmail,
+            name: user.name || normalizedEmail.split("@")[0],
+            imageUrl: user.image ?? null,
+            provider: providerKey,
+            providerId: account.providerAccountId,
+            emailVerified: true,
+            isActive: true,
+            lastLoginAt: new Date(),
+          },
+        });
+
+        const ut = await tx.userTenant.create({
+          data: {
+            userId: u.id,
+            tenantId,
+            isActive: true,
+          },
+        });
+
+        if (viewerRole) {
+          await tx.userRole.create({
+            data: {
+              userTenantId: ut.id,
+              roleId: viewerRole.id,
+              scopeType: "ALL",
+            },
+          });
+        }
+
+        return u;
+      });
+
+      user.id = newUser.id;
       return true;
     },
 

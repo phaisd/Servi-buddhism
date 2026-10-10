@@ -64,10 +64,15 @@ export function AdminLayoutClient({
       ? tenantSettings?.nameTh || t("app.name")
       : tenantSettings?.nameEn || t("app.name");
 
+  const brandTagline =
+    locale === "th"
+      ? tenantSettings?.nameEn || t("app.tagline")
+      : tenantSettings?.nameTh || t("app.tagline");
+
   return (
     <AdminShell
       brandName={brandName}
-      brandTagline={t("app.tagline")}
+      brandTagline={brandTagline}
       brandHref="/dashboard"
       brandLogoUrl={tenantSettings?.logoUrl || "/uploads/mcu-logo.png"}
       breadcrumb={breadcrumb}

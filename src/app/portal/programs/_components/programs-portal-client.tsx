@@ -2,7 +2,8 @@
 "use client";
 
 import * as React from "react";
-import { BookOpen, GraduationCap, Clock, Building2, Search, Filter } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, GraduationCap, Clock, Building2, Search, Filter, Download, Calendar } from "lucide-react";
 import type { Curriculum, Department, DegreeLevel } from "@/generated/prisma";
 
 type CurriculumWithDept = Curriculum & { department?: Department | null };
@@ -18,6 +19,11 @@ const DEGREE_LABELS: Record<DegreeLevel, { th: string; en: string }> = {
   MASTER: { th: "ปริญญาโท", en: "Master's Degree" },
   DOCTORATE: { th: "ปริญญาเอก", en: "Doctorate" },
   CERTIFICATE: { th: "ประกาศนียบัตร", en: "Certificate" },
+};
+
+const LANGUAGE_CONFIG: Record<string, { labelTh: string; labelEn: string; icon: string }> = {
+  TH: { labelTh: "ภาษาไทย", labelEn: "Thai Program", icon: "🇹🇭" },
+  EN: { labelTh: "ภาษาอังกฤษ", labelEn: "English Program", icon: "🇬🇧" },
 };
 
 export function ProgramsPortalClient({
@@ -36,8 +42,10 @@ export function ProgramsPortalClient({
         const q = search.toLowerCase();
         const matchTh = item.nameTh.toLowerCase().includes(q);
         const matchEn = (item.nameEn || "").toLowerCase().includes(q);
+        const matchMajorTh = (item.majorTh || "").toLowerCase().includes(q);
+        const matchMajorEn = (item.majorEn || "").toLowerCase().includes(q);
         const matchDept = (item.department?.nameTh || "").toLowerCase().includes(q);
-        if (!matchTh && !matchEn && !matchDept) return false;
+        if (!matchTh && !matchEn && !matchMajorTh && !matchMajorEn && !matchDept) return false;
       }
       // Department
       if (selectedDept !== "ALL") {
@@ -181,6 +189,17 @@ export function ProgramsPortalClient({
                     </span>
                   </span>
 
+                  {item.language && LANGUAGE_CONFIG[item.language] && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-muted text-foreground text-[11px] font-medium border border-border/50">
+                      <span>{LANGUAGE_CONFIG[item.language].icon}</span>
+                      <span>
+                        {locale === "th"
+                          ? LANGUAGE_CONFIG[item.language].labelTh
+                          : LANGUAGE_CONFIG[item.language].labelEn}
+                      </span>
+                    </span>
+                  )}
+
                   {item.department && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-muted text-muted-foreground text-[11px] font-medium">
                       <Building2 className="h-3 w-3 text-primary" />
@@ -193,20 +212,82 @@ export function ProgramsPortalClient({
                   )}
                 </div>
 
-                <h3 className="text-xl font-bold text-foreground mb-1.5 group-hover:text-primary transition-colors">
+                <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
                   {locale === "th" ? item.nameTh : (item.nameEn || item.nameTh)}
                 </h3>
+
+                {(item.majorTh || item.majorEn) && (
+                  <p className="text-xs font-semibold text-primary/90 mb-1.5 flex items-center gap-1">
+                    <span>สาขาวิชา:</span>
+                    <span>{locale === "th" ? (item.majorTh || item.majorEn) : (item.majorEn || item.majorTh)}</span>
+                  </p>
+                )}
+
                 {item.nameEn && locale === "th" && (
                   <p className="text-xs text-muted-foreground font-sans mb-3">
                     {item.nameEn}
                   </p>
                 )}
 
-                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
-                  {locale === "th"
+                {(() => {
+                  const docRegex = /<!-- TIMETABLE_DOC:(.*?) -->/;
+                  const rawDesc = locale === "th"
                     ? item.descriptionTh || "หลักสูตรคุณภาพมาตรฐานสากล ผลิตบัณฑิตที่มีคุณธรรมและปัญญา"
-                    : (item.descriptionEn || item.descriptionTh || "Quality academic curriculum producing ethical and visionary scholars.")}
-                </p>
+                    : (item.descriptionEn || item.descriptionTh || "Quality academic curriculum producing ethical and visionary scholars.");
+                  
+                  const cleanDesc = rawDesc.replace(docRegex, "").trim();
+
+                  const matchTh = (item.descriptionTh || "").match(docRegex);
+                  const matchEn = (item.descriptionEn || "").match(docRegex);
+                  const match = matchTh || matchEn;
+
+                  let docUrl = "";
+                  let _docName = "";
+                  if (match) {
+                    try {
+                      const parsed = JSON.parse(match[1]);
+                      docUrl = parsed.url;
+                      _docName = parsed.name || (locale === "th" ? "ตารางเรียน / แผนการศึกษา" : "Class Timetable & Syllabus");
+                    } catch {
+                      docUrl = match[1];
+                      _docName = locale === "th" ? "ตารางเรียน / แผนการศึกษา" : "Class Timetable & Syllabus";
+                    }
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                        {cleanDesc || (locale === "th" ? "หลักสูตรคุณภาพมาตรฐานสากล" : "Quality academic curriculum")}
+                      </p>
+
+                      <div className="pt-1 flex flex-col gap-2">
+                        <Link
+                          href={`/portal/programs/${item.id}/timetable`}
+                          className="inline-flex items-center gap-2 w-full justify-center px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-xs"
+                        >
+                          <Calendar className="w-3.5 h-3.5 shrink-0" />
+                          <span>
+                            {locale === "th" ? "ดูตารางการเรียนการสอน (Interactive)" : "View Class Timetable"}
+                          </span>
+                        </Link>
+
+                        {docUrl && (
+                          <a
+                            href={docUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 w-full justify-center px-3 py-1.5 rounded-xl bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-medium transition-all border border-border/60"
+                          >
+                            <Download className="w-3 h-3 shrink-0 text-primary" />
+                            <span className="truncate">
+                              {locale === "th" ? "ดาวน์โหลดไฟล์ตารางเรียน (PDF)" : "Download PDF Timetable"}
+                            </span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Card Footer */}

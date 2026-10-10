@@ -3,6 +3,8 @@ import "server-only";
 export {
   getCurriculums,
   getPublicCurriculums,
+  getCurriculumById,
+  getPublicCurriculumById,
   createCurriculum,
   updateCurriculum,
   deleteCurriculum,

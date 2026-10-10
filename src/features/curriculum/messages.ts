@@ -4,6 +4,7 @@ export const MESSAGES: Dictionary = {
   "curriculum.nav": { th: "ระบบหลักสูตรและการศึกษา", en: "Curriculums & Departments" },
   "curriculum.title": { th: "จัดการหลักสูตร", en: "Manage Curriculums" },
   "curriculum.subtitle": { th: "จัดการข้อมูลหลักสูตรการศึกษาและกำหนดภาควิชาที่สังกัด", en: "Manage academic programs and affiliated departments" },
+  "curriculum.add": { th: "เพิ่มหลักสูตรใหม่", en: "Add New Curriculum" },
   
   "curriculum.departments_title": { th: "ภาควิชา / สาขาวิชา / ส่วนงาน", en: "Departments & Divisions" },
   "curriculum.departments_subtitle": { th: "บริหารจัดการโครงสร้างภาควิชา สาขาวิชา หรือหน่วยงาน เพื่อจัดเก็บหลักสูตรและบุคลากร", en: "Manage organizational departments and programs for curriculums and personnel" },
@@ -16,6 +17,9 @@ export const MESSAGES: Dictionary = {
   "department.type.DEPARTMENT": { th: "ภาควิชา", en: "Department" },
   "department.type.PROGRAM": { th: "สาขาวิชา", en: "Academic Program" },
   "department.type.DIVISION": { th: "ส่วนงาน / ศูนย์", en: "Division / Office" },
+
+  "curriculum.timetables_title": { th: "ตารางการเรียนการสอน", en: "Class Timetables" },
+  "curriculum.timetables_subtitle": { th: "จัดการตารางเรียนแยกตามปีการศึกษา ภาคการศึกษา ระดับ ภาควิชา หลักสูตร และชั้นปี", en: "Manage class schedules by academic year, semester, degree, department, and class year" },
 
   "roles.module.curriculum": { th: "ระบบจัดการหลักสูตรและภาควิชา", en: "Curriculum & Department Management" },
   "perm.curriculum:read": { th: "ดูข้อมูลหลักสูตรและภาควิชา", en: "View curriculum and department data" },

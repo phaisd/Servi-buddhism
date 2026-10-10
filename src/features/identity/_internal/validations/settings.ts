@@ -388,10 +388,11 @@ export const DEFAULT_HERO_SETTINGS: HeroSettings = {
       href: "/portal/documents",
     },
     navLinks: [
-      { id: "news", labelTh: "WORKS / ข่าวสาร", labelEn: "WORKS", href: "/portal/news", enabled: true },
-      { id: "programs", labelTh: "SERVICES / บริการ", labelEn: "SERVICES", href: "/portal/programs", enabled: true },
-      { id: "personnel", labelTh: "ABOUT / บุคลากร", labelEn: "ABOUT", href: "/portal/personnel", enabled: true },
-      { id: "events", labelTh: "TEAM / กิจกรรม", labelEn: "TEAM", href: "/portal/events", enabled: true },
+      { id: "news", labelTh: "ข่าวสาร", labelEn: "NEWS", href: "/portal/news", enabled: true },
+      { id: "programs", labelTh: "หลักสูตร", labelEn: "PROGRAMS", href: "/portal/programs", enabled: true },
+      { id: "timetables", labelTh: "ตารางเรียน", labelEn: "TIMETABLE", href: "/portal/timetables", enabled: true },
+      { id: "personnel", labelTh: "บุคลากร", labelEn: "PERSONNEL", href: "/portal/personnel", enabled: true },
+      { id: "events", labelTh: "กิจกรรม", labelEn: "EVENTS", href: "/portal/events", enabled: true },
     ],
   },
   footerRail: {

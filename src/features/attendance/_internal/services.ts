@@ -4,28 +4,88 @@ import { writeAudit } from "@/features/identity/server";
 import { AttendanceStatus } from "@/generated/prisma";
 import type { Prisma } from "@/generated/prisma";
 
+import {
+  parseClassStudents,
+  injectClassStudents,
+  type AttendanceStudentItem,
+} from "./student-helpers";
+
+export {
+  parseClassStudents,
+  injectClassStudents,
+  type AttendanceStudentItem,
+};
+
 export async function getClasses(tenantId: string, instructorId?: string) {
   const where: Prisma.AttendanceClassWhereInput = { tenantId };
   if (instructorId) where.instructorId = instructorId;
 
-  return db.attendanceClass.findMany({
+  const list = await db.attendanceClass.findMany({
     where,
-    include: { instructor: true },
+    include: {
+      instructor: true,
+      sessions: {
+        orderBy: { date: "desc" },
+        include: {
+          records: true,
+          _count: { select: { records: true } },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
+  });
+
+  return list;
+}
+
+export async function getClassById(tenantId: string, classId: string) {
+  return db.attendanceClass.findFirst({
+    where: { id: classId, tenantId },
+    include: {
+      instructor: true,
+      sessions: {
+        orderBy: { date: "desc" },
+        include: {
+          records: true,
+          _count: { select: { records: true } },
+        },
+      },
+    },
   });
 }
 
 export async function createClass(
   tenantId: string,
   actorId: string,
-  data: Omit<Prisma.AttendanceClassCreateInput, "tenant" | "id" | "createdAt" | "updatedAt" | "sessions" | "instructor"> & { instructorId: string }
+  data: {
+    courseCode: string;
+    courseName: string;
+    term: string;
+    isActive?: boolean;
+    instructorId: string;
+    students?: AttendanceStudentItem[];
+  }
 ) {
+  const { students, ...classData } = data;
   const result = await db.attendanceClass.create({
     data: {
       tenantId,
-      ...data,
+      ...classData,
     },
   });
+
+  // If initial students provided, create a default roster session or save them
+  if (students && students.length > 0) {
+    const rosterTopic = injectClassStudents("บัญชีรายชื่อนิสิตประจำวิชา", students);
+    await db.attendanceSession.create({
+      data: {
+        tenantId,
+        classId: result.id,
+        date: new Date(),
+        topic: rosterTopic,
+      },
+    });
+  }
 
   await writeAudit({
     tenantId,
@@ -39,11 +99,95 @@ export async function createClass(
   return result;
 }
 
+export async function updateClass(
+  tenantId: string,
+  actorId: string,
+  classId: string,
+  data: {
+    courseCode?: string;
+    courseName?: string;
+    term?: string;
+    isActive?: boolean;
+    students?: AttendanceStudentItem[];
+  }
+) {
+  const existing = await db.attendanceClass.findFirst({
+    where: { id: classId, tenantId },
+    include: { sessions: true },
+  });
+  if (!existing) throw new Error("ไม่พบรายวิชาที่ต้องการแก้ไข");
+
+  const { students, ...classData } = data;
+  const result = await db.attendanceClass.update({
+    where: { id: classId },
+    data: classData,
+  });
+
+  if (students !== undefined) {
+    // Look for roster session or create one
+    const rosterSession = existing.sessions.find((s) => s.topic?.includes("<!-- STUDENTS:"));
+    if (rosterSession) {
+      const updatedTopic = injectClassStudents(rosterSession.topic || "", students);
+      await db.attendanceSession.update({
+        where: { id: rosterSession.id },
+        data: { topic: updatedTopic },
+      });
+    } else {
+      const rosterTopic = injectClassStudents("บัญชีรายชื่อนิสิตประจำวิชา", students);
+      await db.attendanceSession.create({
+        data: {
+          tenantId,
+          classId: result.id,
+          date: new Date(),
+          topic: rosterTopic,
+        },
+      });
+    }
+  }
+
+  await writeAudit({
+    tenantId,
+    actorId,
+    action: "attendance.class.update",
+    entity: "AttendanceClass",
+    entityId: result.id,
+    before: existing,
+    after: result,
+  });
+
+  return result;
+}
+
+export async function deleteClass(tenantId: string, actorId: string, classId: string) {
+  const existing = await db.attendanceClass.findFirst({
+    where: { id: classId, tenantId },
+  });
+  if (!existing) throw new Error("ไม่พบรายวิชาที่ต้องการลบ");
+
+  await db.attendanceClass.delete({
+    where: { id: classId },
+  });
+
+  await writeAudit({
+    tenantId,
+    actorId,
+    action: "attendance.class.delete",
+    entity: "AttendanceClass",
+    entityId: classId,
+    before: existing,
+  });
+
+  return { success: true };
+}
+
 export async function getSessions(tenantId: string, classId: string) {
   return db.attendanceSession.findMany({
     where: { tenantId, classId },
     orderBy: { date: "desc" },
-    include: { _count: { select: { records: true } } },
+    include: {
+      records: { orderBy: { studentCode: "asc" } },
+      _count: { select: { records: true } },
+    },
   });
 }
 
@@ -121,4 +265,75 @@ export async function upsertRecord(
   });
 
   return result;
+}
+
+export async function batchUpsertRecords(
+  tenantId: string,
+  actorId: string,
+  sessionId: string,
+  records: Array<{
+    studentCode: string;
+    studentName: string;
+    status: AttendanceStatus;
+    note?: string | null;
+  }>
+) {
+  const operations = records.map((rec) =>
+    db.attendanceRecord.upsert({
+      where: {
+        sessionId_studentCode: {
+          sessionId,
+          studentCode: rec.studentCode,
+        },
+      },
+      create: {
+        tenantId,
+        sessionId,
+        studentCode: rec.studentCode,
+        studentName: rec.studentName,
+        status: rec.status,
+        note: rec.note,
+      },
+      update: {
+        studentName: rec.studentName,
+        status: rec.status,
+        note: rec.note,
+      },
+    })
+  );
+
+  const results = await db.$transaction(operations);
+
+  await writeAudit({
+    tenantId,
+    actorId,
+    action: "attendance.record.batch_upsert",
+    entity: "AttendanceSession",
+    entityId: sessionId,
+    after: { count: results.length },
+  });
+
+  return results;
+}
+
+export async function deleteSession(tenantId: string, actorId: string, sessionId: string) {
+  const existing = await db.attendanceSession.findFirst({
+    where: { id: sessionId, tenantId },
+  });
+  if (!existing) throw new Error("ไม่พบคาบเรียนที่ต้องการลบ");
+
+  await db.attendanceSession.delete({
+    where: { id: sessionId },
+  });
+
+  await writeAudit({
+    tenantId,
+    actorId,
+    action: "attendance.session.delete",
+    entity: "AttendanceSession",
+    entityId: sessionId,
+    before: existing,
+  });
+
+  return { success: true };
 }

@@ -14,24 +14,31 @@ import {
   ChevronDown,
   ChevronRight,
   Landmark,
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { useT } from "@/shared/lib/i18n/client";
 import {
   LiyonCard,
   LiyonField,
   LiyonSelect,
+  LiyonSwitch,
+  StatusPill,
   LiyonDialog,
   LiyonDialogHeader,
   LiyonDialogBody,
   LiyonDialogFooter,
   LiyonDialogCloseButton,
 } from "@/shared/components/liyon";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   createDepartmentAction,
   updateDepartmentAction,
   deleteDepartmentAction,
+  toggleDepartmentActiveAction,
+  getDepartmentsAction,
 } from "@/features/curriculum/actions";
 import type { Department, Curriculum } from "@/generated/prisma";
 
@@ -73,10 +80,38 @@ const TYPE_CONFIG: Record<
 
 export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientProps) {
   const t = useT();
+  const searchParams = useSearchParams();
+  const initialType = searchParams.get("type") || "ALL";
+
   const [items, setItems] = React.useState<DepartmentWithCurriculums[]>(initialItems);
   const [search, setSearch] = React.useState("");
-  const [filterType, setFilterType] = React.useState("ALL");
+  const [filterType, setFilterType] = React.useState(initialType);
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  // Sync fresh data from server
+  const refreshDepartments = React.useCallback(async (silent = false) => {
+    if (!silent) setIsRefreshing(true);
+    try {
+      const fresh = await getDepartmentsAction();
+      if (fresh && Array.isArray(fresh)) {
+        setItems(fresh);
+      }
+    } catch {
+      if (!silent) toast.error("ไม่สามารถรีเฟรชข้อมูลได้");
+    } finally {
+      if (!silent) setIsRefreshing(false);
+    }
+  }, []);
+
+  // Window focus listener to keep items synchronized when navigating between tabs/windows
+  React.useEffect(() => {
+    const handleFocus = () => {
+      void refreshDepartments(true);
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [refreshDepartments]);
 
   // Dialog state
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -90,10 +125,35 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
     nameEn: "",
     code: "",
     type: "DEPARTMENT",
+    affiliatedDept: "",
     descriptionTh: "",
     descriptionEn: "",
     orderIndex: 0,
+    isActive: true,
   });
+
+  // Department list for selection
+  const departmentOptions = React.useMemo(() => {
+    return items.filter(
+      (it) => (!it.type || it.type === "DEPARTMENT") && it.id !== editingItem?.id
+    );
+  }, [items, editingItem]);
+
+  // Mapping of departments to their affiliated programs (สาขาวิชาในสังกัด)
+  const affiliatedProgramsByDept = React.useMemo(() => {
+    const map = new Map<string, DepartmentWithCurriculums[]>();
+    const programs = items.filter((it) => it.type === "PROGRAM");
+    for (const prog of programs) {
+      const desc = prog.descriptionTh || "";
+      const parentDept = departmentOptions.find((d) => desc.includes(d.nameTh));
+      if (parentDept) {
+        const list = map.get(parentDept.id) || [];
+        list.push(prog);
+        map.set(parentDept.id, list);
+      }
+    }
+    return map;
+  }, [items, departmentOptions]);
 
   const openCreateDialog = () => {
     setEditingItem(null);
@@ -101,24 +161,38 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
       nameTh: "",
       nameEn: "",
       code: "",
-      type: "DEPARTMENT",
+      type: filterType !== "ALL" ? filterType : "DEPARTMENT",
+      affiliatedDept: "",
       descriptionTh: "",
       descriptionEn: "",
       orderIndex: items.length,
+      isActive: true,
     });
     setIsFormOpen(true);
   };
 
   const openEditDialog = (item: DepartmentWithCurriculums) => {
     setEditingItem(item);
+    // Detect affiliated department if stored in description or notes
+    let matchedDept = "";
+    if (item.type === "PROGRAM") {
+      const desc = item.descriptionTh || "";
+      const matched = departmentOptions.find((d) => desc.includes(d.nameTh));
+      if (matched) {
+        matchedDept = matched.nameTh;
+      }
+    }
+
     setFormData({
       nameTh: item.nameTh,
       nameEn: item.nameEn || "",
       code: item.code || "",
       type: item.type || "DEPARTMENT",
+      affiliatedDept: matchedDept,
       descriptionTh: item.descriptionTh || "",
       descriptionEn: item.descriptionEn || "",
       orderIndex: item.orderIndex,
+      isActive: item.isActive !== false,
     });
     setIsFormOpen(true);
   };
@@ -132,14 +206,25 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
 
     setSubmitting(true);
     try {
+      // Build descriptionTh incorporating affiliated department if selected
+      let finalDescTh = formData.descriptionTh.trim();
+      if (formData.type === "PROGRAM" && formData.affiliatedDept) {
+        if (!finalDescTh) {
+          finalDescTh = `สังกัด${formData.affiliatedDept}`;
+        } else if (!finalDescTh.includes(formData.affiliatedDept)) {
+          finalDescTh = `${finalDescTh} (${formData.affiliatedDept})`;
+        }
+      }
+
       const payload = {
         nameTh: formData.nameTh.trim(),
         nameEn: formData.nameEn.trim() || null,
         code: formData.code.trim().toUpperCase() || null,
         type: formData.type,
-        descriptionTh: formData.descriptionTh.trim() || null,
+        descriptionTh: finalDescTh || null,
         descriptionEn: formData.descriptionEn.trim() || null,
         orderIndex: Number(formData.orderIndex) || 0,
+        isActive: formData.isActive,
       };
 
       if (editingItem) {
@@ -174,6 +259,19 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
       toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggleActive = async (item: DepartmentWithCurriculums) => {
+    const nextState = item.isActive === false ? true : false;
+    try {
+      await toggleDepartmentActiveAction(item.id, nextState);
+      setItems((prev) =>
+        prev.map((it) => (it.id === item.id ? { ...it, isActive: nextState } : it))
+      );
+      toast.success(nextState ? "เปิดการใช้งานหน่วยงานแล้ว" : "ปิดการใช้งานหน่วยงานชั่วคราว");
+    } catch {
+      toast.error("ไม่สามารถเปลี่ยนสถานะได้");
     }
   };
 
@@ -239,7 +337,18 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refreshDepartments(false)}
+            disabled={isRefreshing}
+            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            title="รีเฟรชข้อมูลล่าสุด"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
+            <span>{isRefreshing ? "กำลังรีเฟรช..." : "รีเฟรช"}</span>
+          </Button>
           <Link href="/curriculum">
             <Button variant="outline" className="gap-2 text-xs">
               <GraduationCap className="w-4 h-4 text-primary" />
@@ -251,7 +360,7 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
           </Link>
           <Button onClick={openCreateDialog} className="gap-2 text-xs font-semibold">
             <Plus className="w-4 h-4" />
-            <span>เพิ่มภาควิชา / ส่วนงาน</span>
+            <span>เพิ่มภาควิชา / สาขาวิชา / ส่วนงาน</span>
           </Button>
         </div>
       </div>
@@ -315,28 +424,54 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
 
       {/* ── FILTERS ── */}
       <LiyonCard>
-        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="relative">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ค้นหาชื่อหน่วยงาน หรือรหัสย่อ..."
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-border bg-background focus:outline-hidden focus:ring-2 focus:ring-primary/20"
-            />
+        <div className="p-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2 border-b pb-3">
+            <span className="text-xs font-semibold text-muted-foreground mr-1">มุมมองประเภท:</span>
+            {[
+              { key: "ALL", label: "🏛️ ทั้งหมด", count: items.length },
+              { key: "DEPARTMENT", label: "🏛️ ภาควิชา (Departments)", count: items.filter((i) => !i.type || i.type === "DEPARTMENT").length },
+              { key: "PROGRAM", label: "📚 สาขาวิชา (Programs)", count: items.filter((i) => i.type === "PROGRAM").length },
+              { key: "DIVISION", label: "🏢 ส่วนงาน / สำนักงาน", count: items.filter((i) => i.type === "DIVISION").length },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setFilterType(tab.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  filterType === tab.key
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "bg-muted/60 hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className="ml-1.5 text-[10px] opacity-80 font-mono">({tab.count})</span>
+              </button>
+            ))}
           </div>
 
-          <LiyonSelect
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="text-xs"
-          >
-            <option value="ALL">🏛️ ทุกประเภทหน่วยงาน</option>
-            <option value="DEPARTMENT">ภาควิชา (Department)</option>
-            <option value="PROGRAM">สาขาวิชา (Program)</option>
-            <option value="DIVISION">ส่วนงาน / สำนักงาน (Division)</option>
-          </LiyonSelect>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="relative">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ค้นหาชื่อหน่วยงาน หรือรหัสย่อ..."
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-border bg-background focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <LiyonSelect
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="text-xs"
+            >
+              <option value="ALL">🏛️ ทุกประเภทหน่วยงาน ({items.length})</option>
+              <option value="DEPARTMENT">ภาควิชา (Department)</option>
+              <option value="PROGRAM">สาขาวิชา (Program)</option>
+              <option value="DIVISION">ส่วนงาน / สำนักงาน (Division)</option>
+            </LiyonSelect>
+          </div>
         </div>
       </LiyonCard>
 
@@ -352,6 +487,7 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
                 <th className="py-3 px-4">รหัสย่อ</th>
                 <th className="py-3 px-4 text-center">หลักสูตรในสังกัด</th>
                 <th className="py-3 px-4 text-center">บุคลากร</th>
+                <th className="py-3 px-4 text-center">สถานะ</th>
                 <th className="py-3 px-4 text-right">จัดการ</th>
               </tr>
             </thead>
@@ -371,23 +507,35 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          {currCount > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => toggleExpand(item.id)}
-                              className="text-muted-foreground hover:text-foreground cursor-pointer p-0.5"
-                              title="ดูหลักสูตรที่สังกัด"
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="w-4 h-4" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4" />
-                              )}
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => toggleExpand(item.id)}
+                            className="text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded transition-colors"
+                            title={isExpanded ? "ย่อลง" : "ดูหลักสูตรที่สังกัด"}
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4 text-primary" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </button>
                           <div>
                             <p className="font-bold text-foreground text-sm flex items-center gap-2">
                               <span>{item.nameTh}</span>
+                              {item.type === "PROGRAM" && (() => {
+                                const matched = departmentOptions.find((d) =>
+                                  item.descriptionTh?.includes(d.nameTh)
+                                );
+                                if (matched) {
+                                  return (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                                      <Landmark className="w-2.5 h-2.5" />
+                                      <span>สังกัด {matched.nameTh}</span>
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </p>
                             {item.nameEn && (
                               <p className="text-muted-foreground text-[11px] font-sans">
@@ -420,24 +568,56 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
                         )}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        {currCount > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => toggleExpand(item.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-semibold text-xs hover:bg-primary/20 transition-colors cursor-pointer"
-                          >
-                            <GraduationCap className="w-3.5 h-3.5" />
-                            <span>{currCount} หลักสูตร</span>
-                          </button>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">0 หลักสูตร</span>
-                        )}
+                        {(() => {
+                          const affiliatedProgs = affiliatedProgramsByDept.get(item.id) || [];
+                          const progCount = affiliatedProgs.length;
+                          return (
+                            <div className="flex flex-col items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => toggleExpand(item.id)}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-semibold text-xs transition-colors cursor-pointer ${
+                                  currCount > 0
+                                    ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                }`}
+                                title="คลิกเพื่อดูหลักสูตรและสาขาวิชาที่สังกัด"
+                              >
+                                <GraduationCap className="w-3.5 h-3.5" />
+                                <span>{currCount} หลักสูตร</span>
+                              </button>
+                              {item.type === "DEPARTMENT" && progCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpand(item.id)}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-colors cursor-pointer border border-emerald-500/20"
+                                  title="คลิกเพื่อดูสาขาวิชาที่สังกัด"
+                                >
+                                  <BookOpen className="w-3 h-3" />
+                                  <span>{progCount} สาขาวิชา</span>
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className="inline-flex items-center gap-1 text-muted-foreground text-xs">
                           <Users className="w-3.5 h-3.5" />
                           <span>{personCount} คน</span>
                         </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleActive(item)}
+                          className="cursor-pointer inline-flex items-center"
+                          title="คลิกเพื่อสลับสถานะเปิด/ปิด"
+                        >
+                          <StatusPill tone={item.isActive !== false ? "ok" : "off"}>
+                            {item.isActive !== false ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                          </StatusPill>
+                        </button>
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
@@ -463,40 +643,145 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
                       </td>
                     </tr>
 
-                    {/* Expandable row: Curriculums under this department */}
-                    {isExpanded && item.curriculums && item.curriculums.length > 0 && (
+                    {/* Expandable row: Affiliated Programs and Curriculums under this department */}
+                    {isExpanded && (
                       <tr className="bg-muted/15 border-b">
-                        <td colSpan={7} className="p-4 pl-12">
-                          <div className="space-y-2">
-                            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                              <GraduationCap className="w-4 h-4 text-primary" />
-                              <span>หลักสูตรที่สังกัดใน &ldquo;{item.nameTh}&rdquo; ({item.curriculums.length}) :</span>
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                              {item.curriculums.map((curr) => (
-                                <div
-                                  key={curr.id}
-                                  className="p-2.5 rounded-lg border bg-background flex items-center justify-between gap-2 shadow-2xs"
-                                >
-                                  <div className="min-w-0">
-                                    <p className="font-semibold text-xs truncate text-foreground">
-                                      {curr.nameTh}
+                        <td colSpan={8} className="p-4 pl-12">
+                          <div className="space-y-4">
+                            {/* 1. แสดงสาขาวิชาในสังกัด (Affiliated Programs) ถ้าเป็นภาควิชา */}
+                            {item.type === "DEPARTMENT" && (() => {
+                              const affiliatedProgs = affiliatedProgramsByDept.get(item.id) || [];
+                              return (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                      <BookOpen className="w-4 h-4 text-emerald-600" />
+                                      <span>
+                                        สาขาวิชาในสังกัด &ldquo;{item.nameTh}&rdquo; ({affiliatedProgs.length}) :
+                                      </span>
                                     </p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                      {curr.degree} • {curr.durationYears} ปี
-                                    </p>
+                                    <Link
+                                      href="/curriculum/departments?type=PROGRAM"
+                                      className="text-[11px] text-emerald-600 hover:underline inline-flex items-center gap-1 font-medium"
+                                    >
+                                      <span>จัดการสาขาวิชาทั้งหมด</span>
+                                      <ExternalLink className="w-3 h-3" />
+                                    </Link>
                                   </div>
-                                  <span
-                                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold shrink-0 ${
-                                      curr.isActive
-                                        ? "bg-emerald-500/10 text-emerald-600"
-                                        : "bg-muted text-muted-foreground"
-                                    }`}
-                                  >
-                                    {curr.isActive ? "เปิดสอน" : "ปิด"}
-                                  </span>
+
+                                  {affiliatedProgs.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                      {affiliatedProgs.map((prog) => (
+                                        <div
+                                          key={prog.id}
+                                          className="p-2.5 rounded-lg border bg-background flex items-center justify-between gap-2 shadow-2xs hover:border-emerald-500/30 transition-all"
+                                        >
+                                          <div className="min-w-0">
+                                            <p className="font-semibold text-xs truncate text-foreground flex items-center gap-1">
+                                              <span>{prog.nameTh}</span>
+                                            </p>
+                                            <p className="text-[10px] text-muted-foreground truncate">
+                                              {prog.nameEn || prog.descriptionTh || "สาขาวิชา"}
+                                            </p>
+                                          </div>
+                                          <div className="flex items-center gap-1 shrink-0">
+                                            <span
+                                              className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${
+                                                prog.isActive !== false
+                                                  ? "bg-emerald-500/10 text-emerald-600"
+                                                  : "bg-muted text-muted-foreground"
+                                              }`}
+                                            >
+                                              {prog.isActive !== false ? "เปิด" : "ปิด"}
+                                            </span>
+                                            <Button
+                                              size="icon"
+                                              variant="ghost"
+                                              onClick={() => openEditDialog(prog)}
+                                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                              title="แก้ไขสาขาวิชานี้"
+                                            >
+                                              <Edit2 className="w-3 h-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="p-3 rounded-lg border border-dashed text-xs text-muted-foreground bg-background/40">
+                                      ยังไม่มีสาขาวิชาที่ผูกกับภาควิชานี้ (สามารถไปที่เมนู{" "}
+                                      <Link
+                                        href="/curriculum/departments?type=PROGRAM"
+                                        className="text-emerald-600 underline font-medium"
+                                      >
+                                        สาขาวิชา
+                                      </Link>{" "}
+                                      แล้วแก้ไขระบุสังกัดภาควิชาได้)
+                                    </div>
+                                  )}
                                 </div>
-                              ))}
+                              );
+                            })()}
+
+                            {/* 2. แสดงหลักสูตรในสังกัด (Affiliated Curriculums) */}
+                            <div className="space-y-2 border-t pt-2.5">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                  <GraduationCap className="w-4 h-4 text-primary" />
+                                  <span>
+                                    หลักสูตรที่สังกัดใน &ldquo;{item.nameTh}&rdquo; ({item.curriculums?.length || 0}) :
+                                  </span>
+                                </p>
+                                <Link
+                                  href="/curriculum"
+                                  className="text-[11px] text-primary hover:underline inline-flex items-center gap-1 font-medium"
+                                >
+                                  <span>จัดการหลักสูตรทั้งหมด</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </Link>
+                              </div>
+
+                              {item.curriculums && item.curriculums.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                  {item.curriculums.map((curr) => (
+                                    <Link
+                                      key={curr.id}
+                                      href="/curriculum"
+                                      className="p-2.5 rounded-lg border bg-background hover:border-primary/40 hover:bg-muted/20 transition-all flex items-center justify-between gap-2 shadow-2xs group"
+                                      title="คลิกเพื่อเปิดหน้าจัดการหลักสูตร"
+                                    >
+                                      <div className="min-w-0">
+                                        <p className="font-semibold text-xs truncate text-foreground group-hover:text-primary transition-colors">
+                                          {curr.nameTh}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground">
+                                          {curr.degree} • {curr.durationYears} ปี
+                                        </p>
+                                      </div>
+                                      <span
+                                        className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold shrink-0 ${
+                                          curr.isActive
+                                            ? "bg-emerald-500/10 text-emerald-600"
+                                            : "bg-muted text-muted-foreground"
+                                        }`}
+                                      >
+                                        {curr.isActive ? "เปิดสอน" : "ปิด"}
+                                      </span>
+                                    </Link>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="p-3.5 rounded-lg border border-dashed text-center text-muted-foreground text-xs bg-background/50">
+                                  <p>ยังไม่มีหลักสูตรที่ระบุสังกัดในหน่วยงานนี้</p>
+                                  <p className="text-[11px] text-muted-foreground/80 mt-1">
+                                    ท่านสามารถเข้าไปที่เมนู{" "}
+                                    <Link href="/curriculum" className="text-primary underline font-medium">
+                                      จัดการหลักสูตร
+                                    </Link>{" "}
+                                    แล้วเลือก &ldquo;สังกัดภาควิชา&rdquo; เป็น <strong>{item.nameTh}</strong> ได้ทันที
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -508,10 +793,10 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
 
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                  <td colSpan={8} className="py-12 text-center text-muted-foreground">
                     <Building2 className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
                     <p className="font-medium">ไม่พบข้อมูลภาควิชาหรือหน่วยงานที่ค้นหา</p>
-                    <p className="text-[11px] mt-1">สามารถกด &ldquo;เพิ่มภาควิชา / ส่วนงาน&rdquo; เพื่อสร้างข้อมูลได้ทันที</p>
+                    <p className="text-[11px] mt-1">สามารถกด &ldquo;เพิ่มภาควิชา / สาขาวิชา / ส่วนงาน&rdquo; เพื่อสร้างข้อมูลได้ทันที</p>
                   </td>
                 </tr>
               )}
@@ -524,11 +809,19 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
       <LiyonDialog open={isFormOpen} onOpenChange={setIsFormOpen} wide>
         <LiyonDialogCloseButton label="ปิด" />
         <LiyonDialogHeader
-          title={editingItem ? "แก้ไขภาควิชา / ส่วนงาน" : "เพิ่มภาควิชา / ส่วนงานใหม่"}
+          title={
+            editingItem
+              ? `แก้ไข${editingItem.type === "PROGRAM" ? "สาขาวิชา" : editingItem.type === "DIVISION" ? "ส่วนงาน" : "ภาควิชา"}`
+              : formData.type === "PROGRAM"
+              ? "เพิ่มสาขาวิชาใหม่"
+              : formData.type === "DIVISION"
+              ? "เพิ่มส่วนงานใหม่"
+              : "เพิ่มภาควิชา / สาขาวิชา / ส่วนงานใหม่"
+          }
           description="กำหนดข้อมูลและโครงสร้างของหน่วยงาน เพื่อจัดเก็บหลักสูตรและบุคลากร"
         />
         <form onSubmit={handleSubmit}>
-          <LiyonDialogBody className="space-y-4">
+          <LiyonDialogBody className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <LiyonField label="ชื่อหน่วยงาน (ภาษาไทย) *" hint="เช่น ภาควิชาพระพุทธศาสนา หรือ สาขาวิชาปรัชญา">
                 <input
@@ -561,15 +854,36 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
                 </LiyonSelect>
               </LiyonField>
 
-              <LiyonField label="รหัสย่อ (Code)" hint="เช่น BUD, PHI, DEAN">
-                <input
-                  type="text"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder="BUD"
-                  maxLength={50}
-                />
-              </LiyonField>
+              {formData.type === "PROGRAM" ? (
+                <LiyonField
+                  label="สังกัดภาควิชา"
+                  hint="เลือกภาควิชาที่สาขาวิชานี้สังกัดอยู่"
+                >
+                  <LiyonSelect
+                    value={formData.affiliatedDept}
+                    onChange={(e) =>
+                      setFormData({ ...formData, affiliatedDept: e.target.value })
+                    }
+                  >
+                    <option value="">-- ไม่ระบุภาควิชา --</option>
+                    {departmentOptions.map((d) => (
+                      <option key={d.id} value={d.nameTh}>
+                        {d.nameTh} {d.code ? `(${d.code})` : ""}
+                      </option>
+                    ))}
+                  </LiyonSelect>
+                </LiyonField>
+              ) : (
+                <LiyonField label="รหัสย่อ (Code)" hint="เช่น BUD, PHI, DEAN">
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    placeholder="BUD"
+                    maxLength={50}
+                  />
+                </LiyonField>
+              )}
 
               <LiyonField label="ลำดับการจัดเรียง (Order Index)">
                 <input
@@ -581,6 +895,23 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
                 />
               </LiyonField>
             </div>
+
+            {formData.type === "PROGRAM" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <LiyonField label="รหัสย่อ (Code)" hint="เช่น PROG_BUD, PROG_PHI">
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    placeholder="PROG_BUD"
+                    maxLength={50}
+                  />
+                </LiyonField>
+                <div className="flex items-center text-xs text-muted-foreground p-3 rounded-lg bg-muted/40 border mt-1">
+                  💡 <strong>คำแนะนำ:</strong> เมื่อเลือก <strong>สังกัดภาควิชา</strong> ข้อมูลจะถูกจัดกลุ่มและแสดงความเชื่อมโยงกับภาควิชานั้นๆ โดยอัตโนมัติ
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <LiyonField label="คำอธิบาย / พันธกิจ (ภาษาไทย)">
@@ -599,6 +930,21 @@ export function DepartmentsAdminClient({ initialItems }: DepartmentsAdminClientP
                   placeholder="Department vision, mission, and contact information..."
                 />
               </LiyonField>
+            </div>
+
+            <div className="pt-2 border-t">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <LiyonSwitch
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                />
+                <div>
+                  <span className="text-xs font-semibold text-foreground">เปิดใช้งานหน่วยงานนี้</span>
+                  <p className="text-[11px] text-muted-foreground">
+                    หากปิดใช้งาน หน่วยงานนี้จะไม่แสดงให้เลือกในรายการสร้าง/แก้ไขหลักสูตร
+                  </p>
+                </div>
+              </label>
             </div>
           </LiyonDialogBody>
           <LiyonDialogFooter>

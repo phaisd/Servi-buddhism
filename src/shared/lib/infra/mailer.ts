@@ -3,7 +3,17 @@ import nodemailer from "nodemailer";
 import { env, smtpConfigured } from "./env";
 import { logger } from "./logger";
 import { prisma } from "./prisma";
-import type { SmtpSettings } from "@/features/identity";
+export interface TenantSmtpSettings {
+  enabled?: boolean;
+  service?: "custom" | "gmail" | string;
+  host?: string;
+  port?: number;
+  secure?: boolean;
+  user?: string;
+  pass?: string;
+  fromName?: string;
+  fromEmail?: string;
+}
 
 export interface MailInput {
   to: string;
@@ -20,7 +30,7 @@ export async function sendMail(input: MailInput): Promise<{ delivered: boolean }
       ? await prisma.tenant.findUnique({ where: { id: input.tenantId }, select: { settings: true, nameTh: true } })
       : await prisma.tenant.findFirst({ select: { settings: true, nameTh: true } });
 
-    const smtp = (tenant?.settings as { smtp?: SmtpSettings })?.smtp;
+    const smtp = (tenant?.settings as { smtp?: TenantSmtpSettings })?.smtp;
     if (smtp?.enabled && smtp.user && smtp.pass) {
       const host = smtp.service === "gmail" ? "smtp.gmail.com" : smtp.host || "smtp.gmail.com";
       const port = smtp.service === "gmail" ? (smtp.secure ? 465 : 587) : smtp.port || 465;

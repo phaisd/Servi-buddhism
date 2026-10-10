@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Settings, Layers, Newspaper, FileText, GraduationCap, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Newspaper, FileText, GraduationCap, type LucideIcon } from "lucide-react";
 import { hasPermission, P } from "@/features/identity";
 import { SAMPLE_P } from "@/features/sample";
 import { NEWS_P } from "@/features/news";
@@ -57,6 +57,7 @@ export const sidebarGroups: NavGroup[] = [
       permission: CURRICULUM_P.read,
       children: [
         { title: "curriculum.title", href: "/curriculum", permission: CURRICULUM_P.read },
+        { title: "curriculum.timetables_title", href: "/curriculum/timetables", permission: CURRICULUM_P.read },
         { title: "curriculum.departments_title", href: "/curriculum/departments", permission: CURRICULUM_P.read },
       ],
     }],
@@ -84,10 +85,6 @@ export const sidebarGroups: NavGroup[] = [
     items: [{ title: "events.title", href: "/events", icon: Users, permission: EVENTS_P.manage }],
   },
   {
-    label: "nav.group.sample",
-    items: [{ title: "sample.nav", href: "/sample", icon: Layers, permission: SAMPLE_P.sampleRead }],
-  },
-  {
     label: "nav.group.users",
     items: [{
       title: "nav.users", href: "/users", icon: Users, permission: P.usersRead,
@@ -97,7 +94,19 @@ export const sidebarGroups: NavGroup[] = [
       ],
     }],
   },
-  { label: "nav.group.settings", items: [{ title: "nav.settings", href: "/settings", icon: Settings, permission: P.settingsManage }] },
+  {
+    label: "nav.group.settings",
+    items: [{
+      title: "nav.settings",
+      href: "/settings",
+      icon: Settings,
+      permission: P.settingsManage,
+      children: [
+        { title: "nav.settings", href: "/settings", permission: P.settingsManage },
+        { title: "sample.nav", href: "/sample", permission: SAMPLE_P.sampleRead },
+      ],
+    }],
+  },
 ];
 
 type Ctx = Parameters<typeof hasPermission>[0];

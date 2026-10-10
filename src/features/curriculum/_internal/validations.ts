@@ -10,6 +10,7 @@ export const departmentSchema = z.object({
   descriptionTh: z.string().optional().nullable(),
   descriptionEn: z.string().optional().nullable(),
   orderIndex: z.number().int().default(0),
+  isActive: z.boolean().default(true).optional(),
 });
 
 export const updateDepartmentSchema = departmentSchema.partial();
@@ -20,9 +21,12 @@ export const curriculumSchema = z.object({
   degree: z.enum(["BACHELOR", "MASTER", "DOCTORATE", "CERTIFICATE"]),
   durationYears: z.number().int().min(1).max(10).default(4),
   departmentId: z.string().uuid().optional().nullable(),
+  majorTh: z.string().optional().nullable(),
+  majorEn: z.string().optional().nullable(),
+  language: z.enum(["TH", "EN", "TH_EN"]).default("TH").optional(),
   descriptionTh: z.string().optional().nullable(),
   descriptionEn: z.string().optional().nullable(),
-  imageUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  imageUrl: z.string().optional().or(z.literal("")).nullable(),
   isActive: z.boolean().default(true),
   orderIndex: z.number().int().default(0),
 });

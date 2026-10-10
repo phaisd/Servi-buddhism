@@ -1,3 +1,4 @@
+import * as React from "react";
 import { requirePermission } from "@/features/identity/server";
 import { CURRICULUM_P } from "@/features/curriculum";
 import { getDepartments } from "@/features/curriculum/server";
@@ -7,5 +8,9 @@ export default async function CurriculumDepartmentsPage() {
   const ctx = await requirePermission(CURRICULUM_P.read);
   const items = await getDepartments(ctx.tenantId);
 
-  return <DepartmentsAdminClient initialItems={items} />;
+  return (
+    <React.Suspense fallback={<div className="p-6">กำลังโหลดข้อมูล...</div>}>
+      <DepartmentsAdminClient initialItems={items} />
+    </React.Suspense>
+  );
 }

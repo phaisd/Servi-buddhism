@@ -66,6 +66,24 @@ export async function getPublicCurriculums(
   });
 }
 
+export async function getCurriculumById(tenantId: string, id: string) {
+  return db.curriculum.findUnique({
+    where: { id, tenantId },
+    include: {
+      department: true,
+    },
+  });
+}
+
+export async function getPublicCurriculumById(tenantId: string, id: string) {
+  return db.curriculum.findFirst({
+    where: { id, tenantId, isActive: true },
+    include: {
+      department: true,
+    },
+  });
+}
+
 export async function createCurriculum(
   tenantId: string,
   actorId: string,
@@ -75,6 +93,9 @@ export async function createCurriculum(
     degree: DegreeLevel;
     durationYears?: number;
     departmentId?: string | null;
+    majorTh?: string | null;
+    majorEn?: string | null;
+    language?: string | null;
     descriptionTh?: string | null;
     descriptionEn?: string | null;
     imageUrl?: string | null;
@@ -82,6 +103,32 @@ export async function createCurriculum(
     orderIndex?: number;
   }
 ) {
+  // If majorTh is provided, check if it already exists as a PROGRAM department; if not, auto-create it
+  const trimmedMajorTh = data.majorTh?.trim();
+  if (trimmedMajorTh) {
+    const existingProgram = await db.department.findFirst({
+      where: {
+        tenantId,
+        type: "PROGRAM",
+        nameTh: trimmedMajorTh,
+      },
+    });
+
+    if (!existingProgram) {
+      await db.department.create({
+        data: {
+          tenantId,
+          nameTh: trimmedMajorTh,
+          nameEn: data.majorEn?.trim() || null,
+          type: "PROGRAM",
+          descriptionTh: `สาขาวิชา ${trimmedMajorTh}`,
+          orderIndex: 0,
+          isActive: true,
+        },
+      });
+    }
+  }
+
   const result = await db.curriculum.create({
     data: {
       tenantId,
@@ -90,6 +137,9 @@ export async function createCurriculum(
       degree: data.degree,
       durationYears: data.durationYears ?? 4,
       departmentId: data.departmentId || null,
+      majorTh: data.majorTh || null,
+      majorEn: data.majorEn || null,
+      language: data.language || "TH",
       descriptionTh: data.descriptionTh,
       descriptionEn: data.descriptionEn,
       imageUrl: data.imageUrl,
@@ -123,6 +173,9 @@ export async function updateCurriculum(
     degree: DegreeLevel;
     durationYears?: number;
     departmentId?: string | null;
+    majorTh?: string | null;
+    majorEn?: string | null;
+    language?: string | null;
     descriptionTh?: string | null;
     descriptionEn?: string | null;
     imageUrl?: string | null;
@@ -133,11 +186,40 @@ export async function updateCurriculum(
   const before = await db.curriculum.findUnique({ where: { id, tenantId } });
   if (!before) throw new Error("Curriculum not found");
 
+  // If majorTh is provided/updated, auto-create PROGRAM department if not exists
+  const trimmedMajorTh = data.majorTh?.trim();
+  if (trimmedMajorTh) {
+    const existingProgram = await db.department.findFirst({
+      where: {
+        tenantId,
+        type: "PROGRAM",
+        nameTh: trimmedMajorTh,
+      },
+    });
+
+    if (!existingProgram) {
+      await db.department.create({
+        data: {
+          tenantId,
+          nameTh: trimmedMajorTh,
+          nameEn: data.majorEn?.trim() || null,
+          type: "PROGRAM",
+          descriptionTh: `สาขาวิชา ${trimmedMajorTh}`,
+          orderIndex: 0,
+          isActive: true,
+        },
+      });
+    }
+  }
+
   const result = await db.curriculum.update({
     where: { id, tenantId },
     data: {
       ...data,
       departmentId: data.departmentId !== undefined ? (data.departmentId || null) : undefined,
+      majorTh: data.majorTh !== undefined ? (data.majorTh || null) : undefined,
+      majorEn: data.majorEn !== undefined ? (data.majorEn || null) : undefined,
+      language: data.language !== undefined ? (data.language || "TH") : undefined,
     },
     include: {
       department: true,
@@ -216,6 +298,7 @@ export async function createDepartment(
     descriptionTh?: string | null;
     descriptionEn?: string | null;
     orderIndex?: number;
+    isActive?: boolean;
   }
 ) {
   const result = await db.department.create({
@@ -228,6 +311,7 @@ export async function createDepartment(
       descriptionTh: data.descriptionTh,
       descriptionEn: data.descriptionEn,
       orderIndex: data.orderIndex ?? 0,
+      isActive: data.isActive ?? true,
     },
     include: {
       curriculums: true,
@@ -261,6 +345,7 @@ export async function updateDepartment(
     descriptionTh?: string | null;
     descriptionEn?: string | null;
     orderIndex?: number;
+    isActive?: boolean;
   }>
 ) {
   const before = await db.department.findUnique({ where: { id, tenantId } });
